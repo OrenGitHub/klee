@@ -10,6 +10,7 @@
 #ifndef KLEE_EXPRUTIL_H
 #define KLEE_EXPRUTIL_H
 
+#include "klee/util/ExprVisitor.h"
 #include <vector>
 
 namespace klee {
@@ -39,6 +40,13 @@ void findStrVarSymbolicObjects(ref<Expr> e, std::vector<const Array*> &results) 
                            InputIterator end,
                            std::vector<const Array*> &results);
 
+  class ConstantArrayFinder : public ExprVisitor {
+  protected:
+    ExprVisitor::Action visitRead(const ReadExpr &re);
+
+  public:
+    std::set<const Array *> results;
+  };
 }
 
 #endif

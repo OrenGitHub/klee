@@ -90,6 +90,8 @@ void klee_init_env(int* argcPtr, char*** argvPtr) {
   char* new_argv[1024];
   unsigned max_len, min_argvs, max_argvs;
   unsigned sym_files = 0, sym_file_len = 0;
+  unsigned sym_streams = 0, sym_stream_len = 0;
+  unsigned sym_dgrams = 0, sym_dgram_len = 0;
   unsigned sym_stdin_len = 0;
   int sym_stdout_flag = 0;
   int save_all_writes_flag = 0;
@@ -191,6 +193,27 @@ usage: (klee_init_env) [options] [program arguments]\n\
 		
       fd_fail = __str_to_int(argv[k++], msg);
     }
+    else if (__streq(argv[k], "--sym-streams") || __streq(argv[k], "-sym-streams")) {
+      const char* msg = "--sym-streams expects two integer arguments <no-streams> <bytes-per-stream>";
+
+      if (k+2 >= argc)
+        __emit_error(msg);
+
+      k++;
+      sym_streams = __str_to_int(argv[k++], msg);
+      sym_stream_len = __str_to_int(argv[k++], msg);
+    }
+    else if (__streq(argv[k], "--sym-datagrams") || __streq(argv[k], "-sym-datagrams")) {
+      const char* msg = "--sym-datagrams expects two integer arguments <no-datagrams> <bytes-per-datagram>";
+
+      if (k+2 >= argc)
+        __emit_error(msg);
+
+      k++;
+      sym_dgrams = __str_to_int(argv[k++], msg);
+      sym_dgram_len = __str_to_int(argv[k++], msg);
+    }
+   
     else {
       /* simply copy arguments */
       __add_arg(&new_argc, new_argv, argv[k++], 1024);
@@ -205,7 +228,11 @@ usage: (klee_init_env) [options] [program arguments]\n\
   *argcPtr = new_argc;
   *argvPtr = final_argv;
 
-  klee_init_fds(sym_files, sym_file_len, sym_stdin_len, sym_stdout_flag,
-                save_all_writes_flag, fd_fail);
+  klee_init_fds(sym_files, sym_file_len, sym_stdin_len,
+                sym_stdout_flag, save_all_writes_flag,
+                sym_streams, sym_stream_len,
+                sym_dgrams, sym_dgram_len,
+                fd_fail);
+
 }
 

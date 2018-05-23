@@ -86,7 +86,14 @@ addons:
   apt:
     sources:
     - sourceline: 'ppa:ubuntu-toolchain-r/test'
-    - sourceline: 'ppa:h-rayflood/llvm'
+    - sourceline: 'deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-3.4 main'
+      key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
+    - sourceline: 'deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-3.5 main'
+      key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
+    - sourceline: 'deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-3.6 main'
+      key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
+    - sourceline: 'deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-3.7 main'
+      key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
     - sourceline: 'deb http://download.opensuse.org/repositories/home:/delcypher:/z3/xUbuntu_14.04/ /'
       key_url: 'http://download.opensuse.org/repositories/home:delcypher:z3/xUbuntu_14.04/Release.key'
     packages:
@@ -100,6 +107,7 @@ addons:
     - lcov
 
 cache:
+  ccache: true
   apt: true
   directories:
     - $HOME/Library/Caches/Homebrew
@@ -110,7 +118,7 @@ before_install:
     ###########################################################################
     # Update package information
     - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get update; fi
-    - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update && brew tap klee/klee; fi
+    - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update && brew tap klee/klee && brew install ccache && export PATH="/usr/local/opt/ccache/libexec:$PATH" ; fi
     ###########################################################################
     # Set up out of source build directory
     ###########################################################################
