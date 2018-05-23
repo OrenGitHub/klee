@@ -56,10 +56,10 @@ as that of the covered work.  */
 #include "test.h"
 #endif
 
-char *sstrchr(const char * c, char t) {return c; }
-size_t sstrlen(const char * c) {return 0; }
-void* sstrdup(const char * c) {return NULL; }
-int sstrcmp(const char * c, const char* c2) {return 0; }
+char *sstrchr(const char * c, char t) {return strchr(c,t); }
+size_t sstrlen(const char * c) {return strlen(c); }
+void* sstrdup(const char * c) {return strdup(c); }
+int sstrcmp(const char * c, const char* c2) {return strcmp(c,c2); }
 
 //#define strchr sstrchr
 //#define strlen sstrlen
