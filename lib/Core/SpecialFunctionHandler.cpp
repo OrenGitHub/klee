@@ -93,12 +93,13 @@ static SpecialFunctionHandler::HandlerInfo handlerInfo[] = {
   add("MyPrintOutput",               handleMyPrintOutput,               false),
   add("MyAtoi",                      handleMyAtoi,                      true),
   add("markString",                  handleMarkString,                    false),
-  add("strcpy",                      handleStrcpy,                    false),
-  add("strncpy",                     handleStrncpy,                   false),
-  add("strchr",                      handleStrchr,                    true),
-  add("strcmp",                      handleStrcmp,                    true),
-  add("myStrncmp",                   handleStrncmp,                   true),
-  add("strlen",                      handleStrlen,                    true),
+  add("sstrdup",                     handleStrdup,                    true),
+  add("sstrcpy",                      handleStrcpy,                    false),
+  add("sstrncpy",                     handleStrncpy,                   false),
+  add("sstrchr",                      handleStrchr,                    true),
+  add("sstrcmp",                      handleStrcmp,                    true),
+  add("sstrncmp",                   handleStrncmp,                   true),
+  add("sstrlen",                      handleStrlen,                    true),
   add("BREAKPOINT",                  handleBREAKPOINT,                false),
   add("klee_get_value_i32", handleGetValue, true),
   add("klee_get_value_i64", handleGetValue, true),
@@ -753,6 +754,8 @@ void SpecialFunctionHandler::handleStrlen(
 	std::vector<ref<Expr> > &arguments)
 {
   assert(arguments.size() == 1 && "Strlen can only have 1 argument");
+  errs() << "=========================++\n";
+  state.dumpStack(errs());
   StrModel m = stringModel.modelStrlen(
                       executor.resolveOne(state,arguments[0]).second, 
                       arguments[0]);
@@ -910,12 +913,50 @@ void SpecialFunctionHandler::handleMyPrintOutput(
 
 static int numABSerials = 0;
 
+void SpecialFunctionHandler::handleStrdup(
+	ExecutionState &state,
+	KInstruction *target,
+	std::vector<ref<Expr> > &arguments) {
+
+  assert(arguments.size() == 1 && "Strdup accepts a single argument: size");
+  Executor::ExactResolutionList rl;
+  executor.resolveExact(state, arguments[0], rl, "str dup");
+
+  
+  for (Executor::ExactResolutionList::iterator it = rl.begin(), 
+         ie = rl.end(); it != ie; ++it) {
+    const MemoryObject *mo_orig = (it->first.first);
+    const ObjectState* os_orig = (it->first.second);
+    size_t allocationAlignment = executor.getAllocationAlignment(target->inst);
+
+    MemoryObject* mo_new =
+        executor.memory->allocate(mo_orig->size, false, false,
+                                  target->inst, allocationAlignment);
+    assert(mo_new && "Strdup failed allocating memory");
+    ObjectState *os_new = executor.bindObjectInState(state, mo_new, false);
+    executor.bindLocal(target, state, mo_new->getBaseExpr());
+
+    os_new->serial = ++numABSerials;
+    os_new->version = 0;
+    state.dumpStack(errs());
+    std::string ab_name = os_new->getABSerial();
+    errs() << ab_name << " Got new name!\n";
+    std::string old_ab = os_orig->getABSerial();
+    errs() << "Strdupping " << ab_name << " from " << old_ab << " at:\n:";
+//    errs() << "Creating an ab serial " << ab_name << " size " << mo->size << "\n";
+	  state.addConstraint(StrEqExpr::create(
+  		StrVarExpr::create(ab_name),
+  		StrVarExpr::create(old_ab)
+      ));
+    }
+}
+
 void SpecialFunctionHandler::handleMarkString(
 	ExecutionState &state,
 	KInstruction *target,
 	std::vector<ref<Expr> > &arguments) {
 
-  assert(arguments.size() == 1 && "Mark symbolic only accepts a single pointer");
+  assert(arguments.size() == 1 && "markString takes a single pointer");
 
   Executor::ExactResolutionList rl;
   executor.resolveExact(state, arguments[0], rl, "mark string");
@@ -969,6 +1010,7 @@ void SpecialFunctionHandler::handleStrchr(
       isOnlyCompare &= isa<CmpInst>(ui);
   }
   errs() << "Is only used in compare: " << isOnlyCompare << "\n";
+  state.dumpStack(errs());
 
   if(isOnlyCompare) {
     //Use contains semantics
