@@ -151,11 +151,19 @@ ExprVisitor::Action ExprEvaluator::visitStrLen(const StrLengthExpr& sle) {
     return Action::changeTo(ConstantExpr::create(len, Expr::Int64));
 }
 
-bool ends_with(std::string const & value, std::string const & ending)
+bool ends_with(
+	std::vector<unsigned char> const &value,
+	std::vector<unsigned char> const &ending)
 {
-    if (ending.size() > value.size()) return false;
-    return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
+	if (ending.size() > value.size()) return false;
+	return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
 }
+
+//bool ends_with(std::string const & value, std::string const & ending)
+//{
+//    if (ending.size() > value.size()) return false;
+//    return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
+//}
 
 ExprVisitor::Action ExprEvaluator::visitContainsStringsExpr(const StrContainsExpr& sc)
 {
@@ -170,8 +178,8 @@ ExprVisitor::Action ExprEvaluator::visitContainsStringsExpr(const StrContainsExp
     if(needle == nullptr) return Action::skipChildren();
     assert(needle && "needle must be a constant string");
 
-	std::string oren_haystack(haystack->data.begin(),haystack->data.end());
-	std::string oren_needle(needle->data.begin(),needle->data.end());
+	// std::string oren_haystack(haystack->data.begin(),haystack->data.end());
+	// std::string oren_needle(needle->data.begin(),needle->data.end());
 	
     int i=0;
     
@@ -183,21 +191,22 @@ ExprVisitor::Action ExprEvaluator::visitContainsStringsExpr(const StrContainsExp
     //for (i=0;i < oren_needle.size(); i++) { llvm::errs() << oren_needle[i]; }
     //llvm::errs() << " == ";
 
-	bool res = false;
-				
-	if (oren_haystack.find(oren_needle) != std::string::npos)
-	{
-		res = true;
-	}
-	else
-	{
-		res = false;
-	}
+	auto firstIndex = std::search(
+		haystack->data.begin(),
+		haystack->data.end(),
+		needle->data.begin(),
+		needle->data.end());
 
-    if (res) { llvm::errs() << "True \n"; }
-    else     { llvm::errs() << "False\n"; }
+    size_t fstIdx = std::distance(haystack->data.begin(),firstIndex);
     
-    return Action::changeTo(ConstantExpr::create(res,Expr::Bool));	
+    if(firstIndex == haystack->data.end())
+    {
+		return Action::changeTo(ConstantExpr::create(0,Expr::Bool));
+    }
+    else
+    {
+    	return Action::changeTo(ConstantExpr::create(1,Expr::Bool));
+    }
 }
 
 ExprVisitor::Action ExprEvaluator::visitSuffixStringsExpr(const StrSuffixExpr& se)
@@ -213,8 +222,8 @@ ExprVisitor::Action ExprEvaluator::visitSuffixStringsExpr(const StrSuffixExpr& s
     if(suffix == nullptr) return Action::skipChildren();
     assert(suffix && "suffix must be a constant string");
 
-    std::string oren_s(s->data.begin(),s->data.end());
-    std::string oren_suffix(suffix->data.begin(),suffix->data.end());
+    //std::string oren_s(s->data.begin(),s->data.end());
+    //std::string oren_suffix(suffix->data.begin(),suffix->data.end());
  
     int i=0;
     
@@ -226,7 +235,7 @@ ExprVisitor::Action ExprEvaluator::visitSuffixStringsExpr(const StrSuffixExpr& s
     //for (i=0;i < suffix->data.size(); i++) { llvm::errs() << suffix[i]; }
     //llvm::errs() << " == ";
 
-	bool res = ends_with(oren_s,oren_suffix);
+	bool res = ends_with(s->data,suffix->data);
 
     if (res) { llvm::errs() << "True \n"; }
     else     { llvm::errs() << "False\n"; }
