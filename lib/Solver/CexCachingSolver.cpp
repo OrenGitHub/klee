@@ -325,6 +325,11 @@ bool CexCachingSolver::computeValue(const Query& query,
     return false;
   assert(a && "computeValue() must have assignment");
   result = a->evaluate(query.expr);  
+  result->dump();
+  if(StrConstExpr* sc = dyn_cast<StrConstExpr>(result)) {
+     std::string st(sc->data.begin(), sc->data.end());
+     result = ConstantExpr::create(st);
+  }
   assert(isa<ConstantExpr>(result) && 
          "assignment evaluation did not result in constant");
   return true;
