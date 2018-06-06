@@ -57,11 +57,10 @@ ExprVisitor::Action ExprEvaluator::visitExpr(const Expr &e) {
   return Action::changeTo(e.rebuild(Kids));
 }
 ExprVisitor::Action ExprEvaluator::visitBvToInt(const BvToIntExpr& e) {
-    e.dump();
   ref<Expr> _c = visit(e.bvExpr);
   ConstantExpr *c = dyn_cast<ConstantExpr>(_c);
   assert(c && "non constant bv in bvToint");
-  llvm::errs() << "bit width : " << dyn_cast<ConstantExpr>(e.bvExpr)->getWidth() << "\n";
+  //llvm::errs() << "bit width : " << dyn_cast<ConstantExpr>(e.bvExpr)->getWidth() << "\n";
 
   return Action::changeTo(ConstantExpr::create(c->getZExtValue(), Expr::Int64));
 }
