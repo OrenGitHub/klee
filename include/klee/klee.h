@@ -157,6 +157,8 @@ extern "C" {
 
   /* Merge all paths of the state that went through klee_open_merge */
   void klee_close_merge();
+
+  void markString(char *p);
 #ifdef __cplusplus
 }
 #endif

@@ -96,7 +96,7 @@ ExprVisitor::Action ExprEvaluator::visitStrVar(const StrVarExpr& se) {
    int idx = 0;
    int numBufIdx = -1; 
    int getChrIdx = 0;
-   while(idx < 25) { //not null terminated
+   while(idx < MAX_SIZE) { //not null terminated
         //llvm::errs() << a <<  a->name <<  " In loop\n";
         ref<Expr> ch = getInitialValue(*a, getChrIdx);
         if(isa<NotOptimizedExpr>(ch)) break;

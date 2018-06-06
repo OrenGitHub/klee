@@ -864,12 +864,14 @@ void SpecialFunctionHandler::handleMarkString(
     std::string ab_name = wos->getABSerial();
     errs() << "Creating " << ab_name << " at:\n:";
 //    state.dumpStack(errs());
-    if(mo->isGlobal) {
+    if(mo->isGlobal && isa<ConstantExpr>(wos->read8(0))) {
         //const GlobalVariable* v = dynamic_cast<const GlobalVariable*>(mo->allocSite);
         //assert(v && "Unsusported marks string of a non glbal variable global");
         //assert(v->isConstant() && "mark string of non constant global");
         char c[wos->size + 1];
         for(unsigned i = 0; i < wos->size; i++) {
+            errs() << "wos read " << wos->read8(i) << "\n";
+            wos->read8(i)->dump();
             c[i] = (char)dyn_cast<ConstantExpr>(wos->read8(i))->getZExtValue(8);
         }
         std::stringstream ss;
