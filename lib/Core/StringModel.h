@@ -43,6 +43,13 @@ public:
                          const ObjectState* moQ, ref<Expr> q, ref<Expr> n);
 
     StrModel modelStrchr(const ObjectState* moS, ref<Expr> s, ref<Expr> c);
+
+    StrModel modelStrstr(
+    	const ObjectState* osHaystack,
+    	ref<Expr> haystack,
+    	const ObjectState* osNeedle,
+		ref<Expr> needle);
+		
     StrModel modelStrlen(const ObjectState* moS, ref<Expr>	s);
     StrModel modelStrcpy(const ObjectState* moDst, ref<Expr> dst,
                          const ObjectState* moSrc, ref<Expr> src);

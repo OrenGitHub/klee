@@ -96,6 +96,7 @@ static SpecialFunctionHandler::HandlerInfo handlerInfo[] = {
   add("strcpy",                      handleStrcpy,                    false),
   add("strncpy",                     handleStrncpy,                   false),
   add("strchr",                      handleStrchr,                    true),
+  add("strstr",                      handleStrstr,                    true),
   add("strrchr",                     handleStrrchr,                   true),
   add("strcmp",                      handleStrcmp,                    true),
   add("myStrncmp",                   handleStrncmp,                   true),
@@ -1077,6 +1078,51 @@ void SpecialFunctionHandler::handleStrrchr(
 	/* [19] Finally, bind local !!! */
 	/********************************/
 	executor.bindLocal(target,*(branches.first), strrchrReturnValue);
+}
+
+void SpecialFunctionHandler::handleStrstr(
+	ExecutionState &state,
+	KInstruction *target,
+	std::vector<ref<Expr> > &arguments)
+{
+	bool isOnlyCompare = true;
+	// errs() << "Uses of strstr: \n";
+	//for(auto i = target->inst->use_begin(); i != target->inst->use_end(); i++)
+	//{
+	//	i->print(errs());
+	//	User* ui = *i;
+	//	errs() << "\n";
+	//	isOnlyCompare &= isa<CmpInst>(ui);
+	//}
+	//errs() << "Is only used in compare: " << isOnlyCompare << "\n";
+
+	//if(isOnlyCompare)
+	//{
+		//Use contains semantics
+	//}
+	//else
+	//{
+		//Use firstIdxOf semantics
+	//}
+
+	StrModel m = stringModel.modelStrstr(
+		executor.resolveOne(state,arguments[0]).second, 
+		arguments[0],
+		executor.resolveOne(state,arguments[1]).second, 
+		arguments[1]);
+
+	Executor::StatePair branches = executor.fork(state, m.second, true);
+	ExecutionState *valid_access = branches.first;
+	ExecutionState *invalid_access= branches.second;
+	if(invalid_access)
+	{
+		executor.terminateStateOnError(
+			*invalid_access, 
+			"Strstr has out of bounds behaviour",
+			Executor::Ptr);
+	}
+	
+	executor.bindLocal(target,*valid_access, m.first);
 }
 
 void SpecialFunctionHandler::handleStrchr(

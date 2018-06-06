@@ -147,6 +147,76 @@ StrModel StringModel::modelStrcmp(
    );
 }
 
+StrModel StringModel::modelStrstr(
+	const ObjectState* osHaystack,
+	ref<Expr> haystack,
+	const ObjectState* osNeedle,
+	ref<Expr> needle)
+{
+	const MemoryObject* moHaystack = osHaystack->getObject();
+	const MemoryObject* moNeedle   = osNeedle->getObject();
+
+	/********************/
+	/* [5] haystack_var */
+	/********************/
+	ref<Expr> haystack_size   = moHaystack->getIntSizeExpr();
+	ref<Expr> haystack_offset = moHaystack->getOffsetExpr(haystack);	
+	ref<Expr> haystack_var    = StrSubstrExpr::create(
+		StrVarExpr::create(osHaystack->getABSerial()),
+		BvToIntExpr::create(haystack_offset),
+		SubExpr::create(haystack_size,haystack_offset));
+
+	/******************/
+	/* [6] needle_var */
+	/******************/
+	ref<Expr> needle_size   = moNeedle->getIntSizeExpr();
+	ref<Expr> needle_offset = moNeedle->getOffsetExpr(needle);	
+	ref<Expr> needle_helper_var = StrSubstrExpr::create(
+		StrVarExpr::create(osNeedle->getABSerial()),
+		BvToIntExpr::create(needle_offset),
+		SubExpr::create(needle_size,needle_offset));
+	ref<Expr> needle_var = StrSubstrExpr::create(
+		needle_helper_var,
+		zero,
+		StrFirstIdxOfExpr::create(
+			needle_helper_var,
+			x00));
+
+	/*******************************/
+	/* [7] Check if c appears in p */
+	/*******************************/
+	ref<Expr> firstIndexOfneedle = StrFirstIdxOfExpr::create(haystack_var,needle_var);
+	ref<Expr> firstIndexOfx00    = StrFirstIdxOfExpr::create(haystack_var,x00);
+
+	/*******************************/
+	/* [8] Check if c appears in p */
+	/*******************************/
+	ref<Expr> needle_appears_in_p = NotExpr::create(EqExpr::create(firstIndexOfneedle,minusOne));	
+	ref<Expr> needle_appears_in_p_before_x00 = SltExpr::create(firstIndexOfneedle,firstIndexOfx00);
+
+	/****************************************************************************/
+	/* [9] Issue an error when invoking strstr on a non NULL terminated string, */
+	/*     and the specific char can be missing ...                             */
+	/****************************************************************************/
+	ref<Expr> validAcess = AndExpr::create(
+    	OrExpr::create(
+			NotExpr::create(EqExpr::create(firstIndexOfneedle,minusOne)),
+			NotExpr::create(EqExpr::create(firstIndexOfx00,   minusOne))),
+		moHaystack->getBoundsCheckPointer(haystack));
+
+	ref<Expr> strstrReturnValue = 
+		SelectExpr::create(
+			AndExpr::create(
+				needle_appears_in_p,
+				needle_appears_in_p_before_x00),
+			AddExpr::create(
+				firstIndexOfneedle,
+				haystack),
+			zero);
+
+	return std::make_pair(strstrReturnValue,validAcess);
+}
+
 StrModel StringModel::modelStrchr(const ObjectState* os, ref<Expr> s, ref<Expr> c) {
   const MemoryObject* mos = os->getObject();
 	/*******************************/
