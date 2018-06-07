@@ -21,16 +21,19 @@ all: $(BENCHMARKS:.c=.bc)
 	$(OPT) -instnamer -o $@ $<
 
 
-PATH:=$(shell realpath ../../build/bin):$(shell realpath ../scripts):$(shell realpath ../scripts/z3QueriesParserFolder/FOLDER_4_PARSER):$(PATH)
+PATH:=$(shell realpath ../../build-klee/bin):$(PATH)
 export PATH
+
+ARGS:=
 
 .PHONY: phony_explicit
 phony_explicit:
 
 #run target, for example to run strcmp_example.bc use: make strcmp_example.run
 %.run: %.bc phony_explicit
-	klee -solver-backend=z3 -use-cex-cache=0 -use-independent-solver=0 -use-query-log=solver:smt2 \
-	-debug-z3-dump-queries=/tmp/Z3queries.txt $<
+	klee -exit-on-error-type=Assert -posix-runtime -solver-backend=z3 -libc=uclibc -no-output \
+	-use-cex-cache=0 -use-independent-solver=1 -use-query-log=solver:smt2 \
+	-debug-z3-dump-queries=/tmp/Z3queries.txt  -debug-z3-log-api-interaction=/tmp/Z3queries.log $< $(ARGS)
 
 .PHONY: clean
 clean: 
