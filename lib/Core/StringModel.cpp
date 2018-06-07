@@ -23,6 +23,76 @@ StringModel::StringModel() {
   x00 = StrFromBitVector8Expr::create(ConstantExpr::create(0, Expr::Int8));
 }
 
+StrModel StringModel::modelStrncasecmp(
+  const ObjectState* osP, ref<Expr> s1,
+  const ObjectState* osQ, ref<Expr> s2,
+	ref<Expr> n)
+{
+  const MemoryObject* moP = osP->getObject();
+  const MemoryObject* moQ = osQ->getObject();
+	ref<Expr> n_int = BvToIntExpr::create(n);
+
+	 /*********************************/
+	/* [7] AB, svar, offset and size */
+	/*********************************/
+	ref<Expr> ABp_size = moP->getIntSizeExpr();
+	ref<Expr> ABq_size = moQ->getIntSizeExpr();
+	ref<Expr> offset_p = BvToIntExpr::create(moP->getOffsetExpr(s1));
+	ref<Expr> offset_q = BvToIntExpr::create(moQ->getOffsetExpr(s2));
+ 	ref<Expr> ABp      = StrVarExpr::create(osP->getABSerial());
+	ref<Expr> ABq      = StrVarExpr::create(osQ->getABSerial());
+	ref<Expr> p_size   = SubExpr::create(ABp_size,offset_p);
+	ref<Expr> q_size   = SubExpr::create(ABq_size,offset_q);
+	ref<Expr> p_var    = StrSubstrExpr::create(ABp,offset_p, p_size);
+	ref<Expr> q_var    = StrSubstrExpr::create(ABq,offset_q, q_size);
+
+	/*****************************/
+	/* [8] NULL temination stuff */
+	/*****************************/
+	ref<Expr> firstIdxOf_x00_in_p = StrFirstIdxOfExpr::create(p_var,x00);
+	ref<Expr> firstIdxOf_x00_in_q = StrFirstIdxOfExpr::create(q_var,x00);
+
+	ref<Expr> p_is_not_NULL_terminated = EqExpr::create(firstIdxOf_x00_in_p,minusOne);
+	ref<Expr> q_is_not_NULL_terminated = EqExpr::create(firstIdxOf_x00_in_q,minusOne);
+
+	ref<Expr> p_is_NULL_terminated = NotExpr::create(p_is_not_NULL_terminated);
+	ref<Expr> q_is_NULL_terminated = NotExpr::create(q_is_not_NULL_terminated);
+	
+	ref<Expr> p_and_q_are_both_NULL_terminated = AndExpr::create(
+		p_is_NULL_terminated,
+		q_is_NULL_terminated);
+
+	/************************************************************/
+	/* [10] Finally ... check whether p and q are identical ... */
+	/************************************************************/
+	ref<Expr> final_exp = StrEqExpr::create(
+			StrSubstrExpr::create(
+				p_var,
+				zero,
+				SelectExpr::create(
+					SleExpr::create(firstIdxOf_x00_in_p,n_int),
+					firstIdxOf_x00_in_p,
+					n_int)),
+			StrSubstrExpr::create(
+				q_var,
+				zero,
+				SelectExpr::create(
+					SleExpr::create(firstIdxOf_x00_in_q,n_int),
+					firstIdxOf_x00_in_q,
+					n_int)));
+
+   return std::make_pair(
+ 	  	SelectExpr::create(
+	  		final_exp,
+	  		ConstantExpr::create(0,Expr::Int32),
+	  		ConstantExpr::create(1,Expr::Int32)),
+      AndExpr::create(
+		SleExpr::create(n_int,p_size),
+		SleExpr::create(n_int,q_size))
+   );
+}
+
+
 StrModel StringModel::modelStrncmp(
   const ObjectState* osP, ref<Expr> s1,
   const ObjectState* osQ, ref<Expr> s2,

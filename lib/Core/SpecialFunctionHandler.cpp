@@ -100,6 +100,7 @@ static SpecialFunctionHandler::HandlerInfo handlerInfo[] = {
   add("strrchr",                     handleStrrchr,                   true),
   add("strcmp",                      handleStrcmp,                    true),
   add("myStrncmp",                   handleStrncmp,                   true),
+  add("strncasecmp",                 handleStrncasecmp,               true),
   add("strlen",                      handleStrlen,                    true),
   add("strnlen",                     handleStrnlen,                   true),
   add("BREAKPOINT",                  handleBREAKPOINT,                false),
@@ -752,6 +753,91 @@ void SpecialFunctionHandler::handleStrcpy(
   }
 
   src_is_NULL_terminated->addConstraint(m.first);
+}
+
+void SpecialFunctionHandler::handleStrncasecmp(
+	ExecutionState &state,
+	KInstruction *target,
+	std::vector<ref<Expr> > &arguments)
+{
+	ref<Expr> x00 = StrConstExpr::create("\\x00");
+	ref<Expr> one = BvToIntExpr::create(ConstantExpr::create(1,Expr::Int64));
+	ref<Expr> zero= BvToIntExpr::create(ConstantExpr::create(0,Expr::Int64));
+	ref<Expr> minusOne = SubExpr::create(zero,one);
+
+	/***********************************************/
+	/* [0] Make sure strncasecmp gets 3 parameters */
+	/***********************************************/
+	assert(arguments.size() == 3 && "strncasecmp must have 3 arguments");
+	
+	/******************************/
+	/* [1] Extract Objects States */
+	/******************************/
+	const ObjectState*  osp = executor.resolveOne(state,arguments[0]).second;
+	const MemoryObject* mop = osp->getObject();
+	const ObjectState*  osq = executor.resolveOne(state,arguments[1]).second;
+	const MemoryObject* moq = osq->getObject();
+
+	/****************************************/
+	/* [2] Extract s and c ... strrchr(s,c) */
+	/****************************************/
+	ref<Expr> p = arguments[0];
+	ref<Expr> q = arguments[1];
+	ref<Expr> n = BvToIntExpr::create(arguments[2]);
+
+	 /*********************************/
+	/* [3] AB, svar, offset and size */
+	/*********************************/
+	ref<Expr> ABp_size = mop->getIntSizeExpr();
+	ref<Expr> ABq_size = moq->getIntSizeExpr();
+	ref<Expr> offset_p = BvToIntExpr::create(mop->getOffsetExpr(p));
+	ref<Expr> offset_q = BvToIntExpr::create(moq->getOffsetExpr(q));
+ 	ref<Expr> ABp      = StrVarExpr::create(osp->getABSerial());
+	ref<Expr> ABq      = StrVarExpr::create(osq->getABSerial());
+	ref<Expr> p_size   = SubExpr::create(ABp_size,offset_p);
+	ref<Expr> q_size   = SubExpr::create(ABq_size,offset_q);
+	ref<Expr> p_var    = StrSubstrExpr::create(ABp,offset_p, p_size);
+	ref<Expr> q_var    = StrSubstrExpr::create(ABq,offset_q, q_size);
+
+	/*****************************/
+	/* [4] NULL temination stuff */
+	/*****************************/
+	ref<Expr> firstIdxOf_x00_in_p = StrFirstIdxOfExpr::create(p_var,x00);
+	ref<Expr> firstIdxOf_x00_in_q = StrFirstIdxOfExpr::create(q_var,x00);
+
+	ref<Expr> p_is_not_NULL_terminated = EqExpr::create(firstIdxOf_x00_in_p,minusOne);
+	ref<Expr> q_is_not_NULL_terminated = EqExpr::create(firstIdxOf_x00_in_q,minusOne);
+
+	ref<Expr> p_is_NULL_terminated = NotExpr::create(p_is_not_NULL_terminated);
+	ref<Expr> q_is_NULL_terminated = NotExpr::create(q_is_not_NULL_terminated);
+	
+	ref<Expr> p_and_q_are_both_NULL_terminated = AndExpr::create(
+		p_is_NULL_terminated,
+		q_is_NULL_terminated);
+
+	assert(arguments.size() == 3 && "Strncasecmp takes 3 arguments ...");
+	state.dumpStack(errs());
+	StrModel m = stringModel.modelStrncasecmp(
+		executor.resolveOne(state,arguments[0]).second, 
+		arguments[0],
+		executor.resolveOne(state,arguments[1]).second,
+		arguments[1],
+		arguments[2]);
+
+	Executor::StatePair branches = executor.fork(state, m.second, true);
+	ExecutionState *not_access_after_end = branches.first;
+	ExecutionState *access_after_end = branches.second;
+	if(access_after_end)
+	{
+		executor.terminateStateOnError(
+			*access_after_end, 
+			"n in strncmp is bigger than sizes",
+			Executor::Ptr);
+	}
+	executor.bindLocal(
+		target,
+		*not_access_after_end,
+		m.first);
 }
 
 void SpecialFunctionHandler::handleStrncmp(
