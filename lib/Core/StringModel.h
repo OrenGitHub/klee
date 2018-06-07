@@ -49,6 +49,11 @@ public:
     	ref<Expr> haystack,
     	const ObjectState* osNeedle,
 		ref<Expr> needle);
+
+    StrModel modelStrnlen(
+    	const ObjectState* moS,
+    	ref<Expr> s,
+    	ref<Expr> n);
 		
     StrModel modelStrlen(const ObjectState* moS, ref<Expr>	s);
     StrModel modelStrcpy(const ObjectState* moDst, ref<Expr> dst,
