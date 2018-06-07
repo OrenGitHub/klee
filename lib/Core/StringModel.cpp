@@ -271,6 +271,40 @@ StrModel StringModel::modelStrchr(const ObjectState* os, ref<Expr> s, ref<Expr> 
  return std::make_pair(strchrReturnValue, validAcess);
 }
 
+StrModel StringModel::modelStrnlen
+(
+	const ObjectState* os,
+	ref<Expr> s,
+	ref<Expr> n)
+{
+	const MemoryObject* mos = os->getObject();
+	ref<Expr> AB = StrVarExpr::create(os->getABSerial());
+	ref<Expr> offset = BvToIntExpr::create(mos->getOffsetExpr(s));
+	ref<Expr> size = SubExpr::create(mos->getIntSizeExpr(),offset);
+
+	/*****************************/
+	/* [6] Is s NULL terminated? */
+	/*****************************/
+	ref<Expr> svar = StrSubstrExpr::create(AB,offset,size);
+	ref<Expr> firstIdxOf_x00_in_s = StrFirstIdxOfExpr::create(svar,x00);
+	ref<Expr> illegal_access = AndExpr::create(
+		EqExpr::create(firstIdxOf_x00_in_s,minusOne),
+		SgtExpr::create(n,size));
+	ref<Expr> legal_access = NotExpr::create(illegal_access);
+
+	/*************************************/
+	/* [9] bind the result of strlen ... */
+	/*************************************/
+	return std::make_pair(
+		SelectExpr::create(
+			SleExpr::create(
+				firstIdxOf_x00_in_s,
+				n),
+			firstIdxOf_x00_in_s,
+			n),
+		legal_access);
+}
+
 StrModel StringModel::modelStrlen(const ObjectState* os, ref<Expr>	s) {
   const MemoryObject* mos = os->getObject();
 	ref<Expr> AB = StrVarExpr::create(os->getABSerial());

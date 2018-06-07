@@ -101,6 +101,7 @@ static SpecialFunctionHandler::HandlerInfo handlerInfo[] = {
   add("strcmp",                      handleStrcmp,                    true),
   add("myStrncmp",                   handleStrncmp,                   true),
   add("strlen",                      handleStrlen,                    true),
+  add("strnlen",                     handleStrnlen,                   true),
   add("BREAKPOINT",                  handleBREAKPOINT,                false),
   add("klee_get_value_i32", handleGetValue, true),
   add("klee_get_value_i64", handleGetValue, true),
@@ -680,6 +681,33 @@ void SpecialFunctionHandler::handleBREAKPOINT(
 	{
 		fprintf(stdout,"\n");
 	}
+}
+
+void SpecialFunctionHandler::handleStrnlen(
+	ExecutionState &state,
+	KInstruction *target,
+	std::vector<ref<Expr> > &arguments)
+{
+	assert(arguments.size() == 2 && "Strnlen can only have 2 arguments");
+	StrModel m = stringModel.modelStrnlen(
+	  	executor.resolveOne(state,arguments[0]).second,
+	  	arguments[0],
+	  	arguments[1]);
+
+	Executor::StatePair branches = executor.fork(state, m.second, true);
+	ExecutionState *legal_access = branches.first;
+	ExecutionState *illegal_access = branches.second;
+	if (illegal_access)
+	{
+		executor.terminateStateOnError(
+			*illegal_access, 
+			"String passed to strnlen is not null terminated & n is too big ...",
+			Executor::Ptr);
+	}
+	executor.bindLocal(
+		target,
+		*legal_access,
+		m.first);
 }
 
 void SpecialFunctionHandler::handleStrlen(
