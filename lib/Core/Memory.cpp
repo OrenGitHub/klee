@@ -183,6 +183,9 @@ ArrayCache *ObjectState::getArrayCache() const {
 }
 
 std::string ObjectState::getABSerial() const {
+      if(serial < 0) {
+          llvm::errs() << "Can't find serial fori " << object->name << " at " << object->address << " of size " << object->size << "\n";
+      }
       assert(serial >= 0 && version >= 0 && "Can't get serial name of a non abstratc buffer object state");
       std::stringstream ss;
       if(object->isGlobal) {

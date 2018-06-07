@@ -57,7 +57,12 @@ ExprVisitor::Action ExprEvaluator::visitExpr(const Expr &e) {
   return Action::changeTo(e.rebuild(Kids));
 }
 ExprVisitor::Action ExprEvaluator::visitBvToInt(const BvToIntExpr& e) {
-  return Action::changeTo(e.bvExpr);
+  ref<Expr> _c = visit(e.bvExpr);
+  ConstantExpr *c = dyn_cast<ConstantExpr>(_c);
+  assert(c && "non constant bv in bvToint");
+  //llvm::errs() << "bit width : " << dyn_cast<ConstantExpr>(e.bvExpr)->getWidth() << "\n";
+
+  return Action::changeTo(ConstantExpr::create(c->getZExtValue(), Expr::Int64));
 }
 
 ExprVisitor::Action ExprEvaluator::visitStrFromBv8(const StrFromBitVector8Expr& e) {
@@ -91,7 +96,7 @@ ExprVisitor::Action ExprEvaluator::visitStrVar(const StrVarExpr& se) {
    int idx = 0;
    int numBufIdx = -1; 
    int getChrIdx = 0;
-   while(idx < 25) { //not null terminated
+   while(idx < MAX_SIZE) { //not null terminated
         //llvm::errs() << a <<  a->name <<  " In loop\n";
         ref<Expr> ch = getInitialValue(*a, getChrIdx);
         if(isa<NotOptimizedExpr>(ch)) break;
@@ -342,16 +347,18 @@ ExprVisitor::Action ExprEvaluator::visitStrSubstr(const StrSubstrExpr &subStrE) 
     ConstantExpr* offset = dyn_cast<ConstantExpr>(_offset);
     ConstantExpr* length = dyn_cast<ConstantExpr>(_length);
     if(offset != nullptr && length != nullptr) {
-  //  llvm::errs() << "substr starting from: " << offset->getZExtValue() << " of len " << length->getZExtValue() << "\n";
+//    llvm::errs() << "substr starting from: " << offset->getZExtValue() << " of len " << length->getZExtValue() << "\n";
       ref<Expr> _theString = visit(subStrE.s);
+ //     _theString->dump();
       StrConstExpr* theString = dyn_cast<StrConstExpr>(_theString);
       if(theString == nullptr) {
-   //       llvm::errs() << "skiping substring\n";
+          llvm::errs() << "skiping substring\n";
           return Action::skipChildren();
       }
       assert(theString != nullptr && "Non constant strign expr in SubString expr");
-      if(offset->Add(length)->getZExtValue() > theString->data.size()) return Action::skipChildren();
-    //  llvm::errs() << "string size: " << theString->data.size() << "\n";
+      if(offset->Add(length)->getZExtValue() > theString->data.size()) 
+          return Action::skipChildren();
+//      llvm::errs() << "string size: " << theString->data.size() << "\n";
       std::vector<unsigned char> subStr(theString->data.begin() + offset->getZExtValue(),
                                         theString->data.begin() + offset->getZExtValue() + length->getZExtValue());
       return Action::changeTo(StrConstExpr::alloc(subStr));

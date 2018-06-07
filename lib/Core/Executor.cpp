@@ -3795,7 +3795,7 @@ bool Executor::getSymbolicSolution(const ExecutionState &state,
   for (unsigned i = 0; i != state.symbolics.size(); ++i) {
     const MemoryObject* mo = state.symbolics[i].first;
     const ObjectState* os = state.addressSpace.findObject(mo);
-    if(os->serial == 0) { //Bitvector
+    if(os != nullptr && os->serial == 0) { //Bitvector
       res.push_back(std::make_pair(state.symbolics[i].first->name, values[i]));
     } else { //String
       errs() << "Working on " << mo->name << " size: " << mo->size << "\n";

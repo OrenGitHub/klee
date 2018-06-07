@@ -65,6 +65,7 @@ static char *__get_sym_str(int numChars, char *name) {
   char *s = malloc(numChars+1);
   klee_mark_global(s);
   klee_make_symbolic(s, numChars+1, name);
+  markString(s);
 
   for (i=0; i<numChars; i++)
     klee_posix_prefer_cex(s, __isprint(s[i]));

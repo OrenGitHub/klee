@@ -418,6 +418,8 @@ void klee_prefer_cex(void *buffer, uintptr_t condition) {
   ;
 }
 
+void markString(char* p) {}
+
 void klee_posix_prefer_cex(void *buffer, uintptr_t condition) {
   ;
 }

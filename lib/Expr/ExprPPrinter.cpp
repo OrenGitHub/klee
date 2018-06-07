@@ -365,7 +365,10 @@ public:
                   bool printWidth) {
       PC << "'";
       for(auto &c: e->data) {
+       if(isprint(c)) 
         PC << c;
+       else
+        PC << "\\d" << (unsigned int)c;
       }
       PC << "'";
   }
