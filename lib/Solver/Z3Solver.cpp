@@ -228,8 +228,9 @@ bool Z3SolverImpl::computeValue(const Query &query, ref<Expr> &result) {
     // Evaluate the expression with the computed assignment.
     Assignment a(objects, values);
     result = a.evaluate(query.expr);
-    llvm::errs() << "Dumping query and result";
+    llvm::errs() << "Dumping query and result\n";
     query.expr->dump();
+    llvm::errs() << "Result\n";
     result->dump();
   }
 
@@ -398,12 +399,12 @@ SolverImpl::SolverRunStatus Z3SolverImpl::handleSolverResponse(
         std::string str(c);
 //        llvm::errs() << "str: " << str << "\n";
         std::vector<unsigned char> data(str.begin(), str.end());
-        //llvm::errs() << array->name << " size: " << data.size() << " data is: ";
-        //for (unsigned oren = 0;oren<data.size();oren++)
-        //{
-        //	llvm::errs() << data[oren];
-        //}
-        //llvm::errs() << "END\n";
+        llvm::errs() << array->name << " size: " << data.size() << " is: ";
+        for (unsigned oren = 0;oren<data.size();oren++)
+        {
+        	llvm::errs() << data[oren];
+        }
+        llvm::errs() << "END\n";
         values->push_back(data);
         Z3_dec_ref(builder->ctx, out);
 
