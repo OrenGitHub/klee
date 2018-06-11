@@ -42,6 +42,13 @@ public:
     StrModel modelStrncmp(const ObjectState* moP, ref<Expr> p,
                          const ObjectState* moQ, ref<Expr> q, ref<Expr> n);
 
+	StrModel modelStrncasecmp(
+		const ObjectState* moP,
+		ref<Expr> p,
+		const ObjectState* moQ,
+		ref<Expr> q,
+		ref<Expr> n);
+
     StrModel modelStrchr(const ObjectState* moS, ref<Expr> s, ref<Expr> c);
 
     StrModel modelStrstr(
