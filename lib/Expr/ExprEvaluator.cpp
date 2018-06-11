@@ -69,8 +69,8 @@ ExprVisitor::Action ExprEvaluator::visitStrFromBv8(const StrFromBitVector8Expr& 
   ref<Expr> _c = visit(e.someBitVec8);
   ConstantExpr *c = dyn_cast<ConstantExpr>(_c);
   assert(c && "non constant bv in strfrobv8");
-  char arr[2] = { (char)c->getZExtValue(8), 0 };
-  return Action::changeTo(StrConstExpr::create(arr));
+  std::vector<unsigned char> arr{ (char)c->getZExtValue(8) };
+  return Action::changeTo(StrConstExpr::alloc(arr));
 }
 
 
@@ -137,8 +137,8 @@ ExprVisitor::Action ExprEvaluator::visitStrVar(const StrVarExpr& se) {
         getChrIdx++;
    }
    std::vector<unsigned char> ret(c.begin(), c.begin() + idx );
-//   llvm::errs() << "Evaluated str var " << se.name << " to " ;//<< std::string(c.begin(), c.end()) << "\n";
-//   printVectorString(ret);
+   //llvm::errs() << "Evaluated str var " << se.name << " to " ;//<< std::string(c.begin(), c.end()) << "\n";
+   //printVectorString(ret);
    return Action::changeTo(StrConstExpr::alloc(ret));
 }
 
