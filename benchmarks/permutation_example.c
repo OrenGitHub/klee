@@ -16,6 +16,7 @@
 /**********************/
 #include "klee/klee.h"
 
+void markString(char *p){}
 /************/
 /* main ... */
 /************/
@@ -34,6 +35,8 @@ int main(int argc, char **argv)
 
 	markString(p1);
 	markString(p2);
+  klee_make_symbolic(p1, 10, "p1");
+  klee_make_symbolic(p2, 10, "p2");
 
 	p1[9]=0;
 	p2[9]=0;
@@ -42,17 +45,16 @@ int main(int argc, char **argv)
 	{
 		if (strchr(p1,'B'))
 		{
-			if (strchr(p2,'D'))
+			if (strchr(p2,'F'))
 			{
-				if (strchr(p2,'M'))
+				if (strchr(p2,'E'))
 				{
-					if (strlen(p1) <= 6)
+					if (strlen(p1) <= 4)
 					{
-						if (strlen(p2) <= 6)
+						if (strlen(p2) <= 4)
 						{
 							if (strcmp(p1,p2) == 0)
 							{
-								MyPrintOutput("INSIDE if (...)");
 								assert(0);
 							}
 						}

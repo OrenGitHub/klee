@@ -1,4 +1,5 @@
 #include "klee/util/ArrayCache.h"
+#include <regex>
 
 namespace klee {
 
@@ -61,5 +62,37 @@ const Array * ArrayCache::StringArray(const std::string &name) {
     delete array;
     array = *(success.first);
     return array;
+}
+
+const Array * ArrayCache::getMostRecentStringArray(const Array * arr) {
+    std::regex re("AB_serial_(\\d+)_version_(\\d+)");
+
+    std::smatch match;
+    int serial, version;
+    if (std::regex_search(arr->name, match, re) && match.size() > 1) {
+       serial = std::stoi(match.str(1));
+       version = std::stoi(match.str(2));
+    } else {
+       assert(0 && "Failed to match regex");
+       return arr;
+    } 
+    const Array* retArr = arr;
+
+    do {
+    version++;
+
+
+    std::stringstream ss;
+    ss << "AB_serial_" << serial << "_version_" << version;
+    const Array * array =  new Array(ss.str(), 0);
+    if (cachedStringArrays.count(array) == 0) {
+      // Cache miss
+      delete array;
+      return retArr;
+    } else {
+      retArr = *cachedStringArrays.find(array);
+      delete array;
+    }
+    } while(true);
 }
 }
