@@ -68,6 +68,7 @@ public:
                            Expr::Width _range = Expr::Int8);
 
   const Array *StringArray(const std::string &name);
+  const Array *getMostRecentStringArray(const Array * arr);
 
 private:
   typedef unordered_set<const Array *, klee::ArrayHashFn,

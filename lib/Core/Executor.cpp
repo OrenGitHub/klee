@@ -3513,6 +3513,11 @@ void Executor::executeMakeSymbolic(ExecutionState &state,
   if (!replayKTest) {
     // Find a unique name for this array.  First try the original name,
     // or if that fails try adding a unique identifier.
+    const ObjectState* os = state.addressSpace.findObject(mo);
+    if(os->serial > 0) { 
+        state.addSymbolic(mo,arrayCache.StringArray(os->getABSerial())); //FIXME: this get's the oldest version ...
+        return;
+    }
     unsigned id = 0;
     std::string uniqueName = name;
     while (!state.arrayNames.insert(uniqueName).second) {
@@ -3776,12 +3781,11 @@ bool Executor::getSymbolicSolution(const ExecutionState &state,
   std::vector<const Array*> objects;
   for (unsigned i = 0; i != state.symbolics.size(); ++i) {
     const MemoryObject* mo = state.symbolics[i].first;
-    const ObjectState* os = state.addressSpace.findObject(mo);
-    if(os->serial == 0) { //Bitvector
-      objects.push_back(state.symbolics[i].second);
-    } else { //String
-      objects.push_back(arrayCache.StringArray(os->getABSerial()));
+    const Array * arr = state.symbolics[i].second;
+    if(arr->size == 0) { //String
+        arr = arrayCache.getMostRecentStringArray(arr);
     }
+    objects.push_back(arr);
   }
   bool success = solver->getInitialValues(tmp, objects, values);
   solver->setTimeout(0);
@@ -3794,8 +3798,7 @@ bool Executor::getSymbolicSolution(const ExecutionState &state,
   
   for (unsigned i = 0; i != state.symbolics.size(); ++i) {
     const MemoryObject* mo = state.symbolics[i].first;
-    const ObjectState* os = state.addressSpace.findObject(mo);
-    if(os != nullptr && os->serial == 0) { //Bitvector
+    if(state.symbolics[i].second->size > 0) { //Bitvector
       res.push_back(std::make_pair(state.symbolics[i].first->name, values[i]));
     } else { //String
       errs() << "Working on " << mo->name << " size: " << mo->size << "\n";
