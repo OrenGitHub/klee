@@ -217,6 +217,74 @@ StrModel StringModel::modelStrcmp(
    );
 }
 
+StrModel StringModel::modelStrcspn(
+	const ObjectState* osHaystack,
+	ref<Expr> haystack,
+	const ObjectState* osNeedle,
+	ref<Expr> needle)
+{
+	const MemoryObject* moHaystack = osHaystack->getObject();
+	const MemoryObject* moNeedle   = osNeedle->getObject();
+
+	/********************/
+	/* [5] haystack_var */
+	/********************/
+	ref<Expr> haystack_size   = moHaystack->getIntSizeExpr();
+	ref<Expr> haystack_offset = moHaystack->getOffsetExpr(haystack);	
+	ref<Expr> haystack_var    = StrSubstrExpr::create(
+		StrVarExpr::create(osHaystack->getABSerial()),
+		BvToIntExpr::create(haystack_offset),
+		SubExpr::create(haystack_size,haystack_offset));
+
+	/******************/
+	/* [6] needle_var */
+	/******************/
+	ref<Expr> needle_size   = moNeedle->getIntSizeExpr();
+	ref<Expr> needle_offset = moNeedle->getOffsetExpr(needle);	
+	ref<Expr> needle_helper_var = StrSubstrExpr::create(
+		StrVarExpr::create(osNeedle->getABSerial()),
+		BvToIntExpr::create(needle_offset),
+		SubExpr::create(needle_size,needle_offset));
+	ref<Expr> needle_var = StrSubstrExpr::create(
+		needle_helper_var,
+		zero,
+		StrFirstIdxOfExpr::create(
+			needle_helper_var,
+			x00));
+
+	/*******************************/
+	/* [7] Check if c appears in p */
+	/*******************************/
+	static int tmpStrVarSerialIdx=0;
+	ref<Expr> c = StrVarExpr::create(std::string("c")+std::to_string(tmpStrVarSerialIdx++));
+	ref<Expr> needleAppears = EqExpr::create(
+		StrFirstIdxOfExpr::create(haystack_var,c),
+		minusOne);
+	// AndExpr::create(
+		//StrContainsExpr::create(haystack_var,c);//,
+		//StrContainsExpr::create(needle_var  ,c));
+		
+	ref<Expr> firstIndexOfx00 = StrFirstIdxOfExpr::create(haystack_var,x00);
+	
+	/*****************************************************************************/
+	/* [9] Issue an error when invoking strcspn on a non NULL terminated string, */
+	/*     and all the needle chars can be missing ...                           */
+	/*****************************************************************************/
+	ref<Expr> validAccess = //OrExpr::create(
+			needleAppears;//,
+//			StrContainsExpr::create(haystack_var,x00));
+
+	ref<Expr> strcspnReturnValue = 
+		SelectExpr::create(
+			EqExpr::create(
+				StrLengthExpr::create(needle_var),
+				one),
+			StrFirstIdxOfExpr::create(haystack_var,needle_var),
+			one);
+
+	return std::make_pair(strcspnReturnValue,validAccess);
+}
+
 StrModel StringModel::modelStrstr(
 	const ObjectState* osHaystack,
 	ref<Expr> haystack,

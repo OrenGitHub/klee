@@ -101,8 +101,10 @@ static SpecialFunctionHandler::HandlerInfo handlerInfo[] = {
   add("strcmp",                      handleStrcmp,                    true),
   add("myStrncmp",                   handleStrncmp,                   true),
   add("strncasecmp",                 handleStrncasecmp,               true),
+  add("myStrcspn",                   handleStrcspn,                   true),
   add("strlen",                      handleStrlen,                    true),
   add("strnlen",                     handleStrnlen,                   true),
+  add("f2",                          handle_da_loop_killer_f2,        true),
   add("BREAKPOINT",                  handleBREAKPOINT,                false),
   add("klee_get_value_i32", handleGetValue, true),
   add("klee_get_value_i64", handleGetValue, true),
@@ -857,10 +859,10 @@ void SpecialFunctionHandler::handleStrncmp(
   Executor::StatePair branches = executor.fork(state, m.second, true);
   ExecutionState *not_access_after_end = branches.first;
   ExecutionState *access_after_end = branches.second;
-  if(access_after_end) {
-      executor.terminateStateOnError(*access_after_end, 
-          "n in strncmp is bigger than sizes", Executor::Ptr);
-  }
+  //if(access_after_end) {
+  //    executor.terminateStateOnError(*access_after_end, 
+  //        "n in strncmp is bigger than sizes", Executor::Ptr);
+  //}
   executor.bindLocal(target,*not_access_after_end, m.first);
 }
 
@@ -1241,6 +1243,32 @@ void SpecialFunctionHandler::handleStrstr(
 	executor.bindLocal(target,*valid_access, m.first);
 }
 
+void SpecialFunctionHandler::handleStrcspn
+(
+	ExecutionState &state,
+	KInstruction *target,
+	std::vector<ref<Expr> > &arguments)
+{
+	StrModel m = stringModel.modelStrcspn(
+		executor.resolveOne(state,arguments[0]).second,
+		arguments[0],
+		executor.resolveOne(state,arguments[1]).second,
+		arguments[1]);
+
+	Executor::StatePair branches = executor.fork(state, m.second, true);
+	ExecutionState *valid_access = branches.first;
+	ExecutionState *invalid_access= branches.second;
+	if (invalid_access)
+	{
+		executor.terminateStateOnError(
+			*invalid_access, 
+			"Strcspn has out of bounds behaviour",
+			Executor::Ptr);
+	}
+
+	executor.bindLocal(target,*valid_access, m.first);
+}
+
 void SpecialFunctionHandler::handleStrchr(
 	ExecutionState &state,
 	KInstruction *target,
@@ -1504,6 +1532,97 @@ void SpecialFunctionHandler::handle_da_loop_killer_f1(
 			StrEqExpr::create(
 				StrCharAtExpr::create(res,ConstantExpr::create(0,Expr::Int64)),
 				StrConstExpr::create("b"))));
+
+	/*****************************/
+	/* [5] return s + strle(pre) */
+	/*****************************/
+	executor.bindLocal(target,state,
+		AddExpr::create(
+			arguments[0],
+			StrLengthExpr::create(pre)));
+}
+
+void SpecialFunctionHandler::handle_da_loop_killer_f2(
+	ExecutionState &state,
+	KInstruction *target,
+	std::vector<ref<Expr> > &arguments)
+{
+	ref<Expr> one = BvToIntExpr::create(ConstantExpr::create(1,Expr::Int64));
+	
+	/*************************************************/
+	/* [1] Make sure f2 can only get 1 parameter ... */
+	/*************************************************/
+	assert(arguments.size() == 1 && "f2 can only have 1 argument");
+
+	/********************************/
+	/* [2] Extract Object State ... */
+	/********************************/
+	const ObjectState* os = executor.resolveOne(state,arguments[0]).second;
+	const MemoryObject* mos = os->getObject();
+
+	/***********************************/
+	/* [3] Extract AB, offset and size */
+	/***********************************/
+	ref<Expr> AB = StrVarExpr::create(os->getABSerial());
+	ref<Expr> offset = BvToIntExpr::create(mos->getOffsetExpr(arguments[0]));
+	ref<Expr> size = SubExpr::create(mos->getIntSizeExpr(),offset);
+	ref<Expr> s = StrSubstrExpr::create(AB,offset,size);
+	
+	/***************************************************************/
+	/* [4] Assemble pre, pre_tag and suf to express the fact that: */
+	/*     [-] pre does not contain neither "M" nor "T"            */
+	/*     [-] suf[0] is "M" or "T"                                */
+	/***************************************************************/
+	ref<Expr> pre     = StrVarExpr::create(std::string("pre"    )+std::to_string(tmpStrVarSerialIdx++));
+	ref<Expr> pre_tag = StrVarExpr::create(std::string("pre_tag")+std::to_string(tmpStrVarSerialIdx++));
+	ref<Expr> suf     = StrVarExpr::create(std::string("suf"    )+std::to_string(tmpStrVarSerialIdx++));
+
+	/*******************************************************/
+	/* [-] assert that pre is without  M's and without T's */
+	/* [-] assert that pre_tag is with M's or  with    T's */
+	/*******************************************************/
+	ref<Expr> M   = StrConstExpr::create("M");
+	ref<Expr> T   = StrConstExpr::create("T");
+	ref<Expr> x00 = StrConstExpr::create("\\x00");
+	ref<Expr> pre_is_without_Ms                = NotExpr::create(StrContainsExpr::create(pre,M));
+	ref<Expr> pre_is_without_Ts                = NotExpr::create(StrContainsExpr::create(pre,T));
+	ref<Expr> pre_is_without_x00s              = NotExpr::create(StrContainsExpr::create(pre,x00));
+	ref<Expr> pre_is_without_Ms_and_without_Ts = AndExpr::create(pre_is_without_Ms,pre_is_without_Ts);
+	ref<Expr> pre_is_without_M_T_x00           = AndExpr::create(pre_is_without_Ms_and_without_Ts,pre_is_without_x00s);
+	ref<Expr> pre_tag_is_with_an_M             = StrContainsExpr::create(pre_tag,M);
+	ref<Expr> pre_tag_is_with_a__T             = StrContainsExpr::create(pre_tag,T);
+	ref<Expr> pre_tag_is_with__x00             = StrContainsExpr::create(pre_tag,x00);
+	ref<Expr> pre_tag_is_with_M_or_T           = OrExpr::create(pre_tag_is_with_an_M,pre_tag_is_with_a__T);
+	ref<Expr> pre_tag_is_with_M_or_T_or_x00    = OrExpr::create(pre_tag_is_with_M_or_T,pre_tag_is_with__x00);
+
+	/****************************************/
+	/* [-] assert that pre is a prefix of s */
+	/****************************************/
+	ref<Expr> pre_is_a_prefix_of_s = StrPrefixExpr::create(s,pre);
+	
+	/********************************************/
+	/* [-] assert that pre_tag is a prefix of s */
+	/********************************************/
+	ref<Expr> pre_tag_is_a_prefix_of_s = StrPrefixExpr::create(s,pre_tag);
+
+	/*************************************************************/
+	/* [-] assert that (= (+ 1 (str.len pre)) (str.len pre_tag)) */
+	/*************************************************************/
+	ref<Expr> pre_tag_is_1_char_longer_than_pre =
+		EqExpr::create(
+			AddExpr::create(
+				one,
+				StrLengthExpr::create(pre)),
+			StrLengthExpr::create(pre_tag));
+
+	/*****************************************/
+	/* [-] Add the constaints one by one ... */
+	/*****************************************/
+	executor.addConstraint(state,pre_is_without_M_T_x00);
+	executor.addConstraint(state,pre_tag_is_with_M_or_T_or_x00);
+	executor.addConstraint(state,pre_is_a_prefix_of_s);
+	executor.addConstraint(state,pre_tag_is_a_prefix_of_s);
+	executor.addConstraint(state,pre_tag_is_1_char_longer_than_pre);
 
 	/*****************************/
 	/* [5] return s + strle(pre) */

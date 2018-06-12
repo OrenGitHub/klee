@@ -164,6 +164,14 @@ bool ends_with(
 	return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
 }
 
+bool starts_with(
+	std::vector<unsigned char> const &value,
+	std::vector<unsigned char> const &ending)
+{
+	if (ending.size() > value.size()) return false;
+	return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
+}
+
 //bool ends_with(std::string const & value, std::string const & ending)
 //{
 //    if (ending.size() > value.size()) return false;
@@ -212,6 +220,40 @@ ExprVisitor::Action ExprEvaluator::visitContainsStringsExpr(const StrContainsExp
     {
     	return Action::changeTo(ConstantExpr::create(1,Expr::Bool));
     }
+}
+
+ExprVisitor::Action ExprEvaluator::visitPrefixStringsExpr(const StrPrefixExpr& se)
+{
+    ref<Expr> _s      = visit(se.s);
+    ref<Expr> _prefix = visit(se.prefix);
+
+    StrConstExpr* s = dyn_cast<StrConstExpr>(_s);
+    if(s == nullptr) return Action::skipChildren();
+    assert(s && "s must be a constant string");
+
+    StrConstExpr* prefix = dyn_cast<StrConstExpr>(_prefix);
+    if(prefix == nullptr) return Action::skipChildren();
+    assert(prefix && "prefix must be a constant string");
+
+    //std::string oren_s(s->data.begin(),s->data.end());
+    //std::string oren_suffix(suffix->data.begin(),suffix->data.end());
+ 
+    int i=0;
+    
+    //for (i=0;i < s->data.size();      i++) { oren_s[i]=s->data[i]; }
+    //for (i=0;i < suffix->data.size(); i++) { oren_suffix[i]=suffix->data[i]; }
+    
+    //for (i=0;i < s->data.size(); i++) { llvm::errs() << s[i]; }
+    //llvm::errs() << " contains ";
+    //for (i=0;i < suffix->data.size(); i++) { llvm::errs() << suffix[i]; }
+    //llvm::errs() << " == ";
+
+	bool res = starts_with(s->data,prefix->data);
+
+    if (res) { llvm::errs() << "True \n"; }
+    else     { llvm::errs() << "False\n"; }
+    
+    return Action::changeTo(ConstantExpr::create(res,Expr::Bool));
 }
 
 ExprVisitor::Action ExprEvaluator::visitSuffixStringsExpr(const StrSuffixExpr& se)

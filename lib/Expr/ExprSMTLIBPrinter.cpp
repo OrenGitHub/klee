@@ -479,6 +479,8 @@ const char *ExprSMTLIBPrinter::getSMTLIBKeyword(const ref<Expr> &e)
     return "str.++";
   case Expr::Str_Suffix:
     return "str.suffixof";
+  case Expr::Str_Prefix:
+    return "str.prefixof";
   case Expr::Str_Contains:
     return "str.contains";
   case Expr::Str_Substr:
@@ -1052,9 +1054,11 @@ void ExprSMTLIBPrinter::printCastToSort(const ref<Expr> &e,
     *p << ")";
 
     if (bitWidth != Expr::Bool)
-      llvm::errs()
-          << "ExprSMTLIBPrinter : Warning. Casting a bitvector (length "
-          << bitWidth << ") to bool!\n";
+    {
+    	llvm::errs()
+		<< "ExprSMTLIBPrinter : Warning. Casting a bitvector (length "
+		<< bitWidth << ") to bool!\n";
+	}
 
   } break;
   default:
