@@ -65,14 +65,18 @@ const Array * ArrayCache::StringArray(const std::string &name) {
 }
 
 const Array * ArrayCache::getMostRecentStringArray(const Array * arr) {
-    std::regex re("AB_serial_(\\d+)_version_(\\d+)");
+//    std::regex re("AB_serial_(\\d+)_version_(\\d+)");
+    std::regex re("AB(.+)_(\\d+)_version_(\\d+)");
 
     std::smatch match;
     int serial, version;
+    std::string nm;
     if (std::regex_search(arr->name, match, re) && match.size() > 1) {
-       serial = std::stoi(match.str(1));
-       version = std::stoi(match.str(2));
+       nm = match.str(1);
+       serial = std::stoi(match.str(2));
+       version = std::stoi(match.str(3));
     } else {
+       llvm::errs() << arr->name << "\n";
        assert(0 && "Failed to match regex");
        return arr;
     } 
@@ -83,7 +87,7 @@ const Array * ArrayCache::getMostRecentStringArray(const Array * arr) {
 
 
     std::stringstream ss;
-    ss << "AB_serial_" << serial << "_version_" << version;
+    ss << "AB" << nm << "_" << serial << "_version_" << version;
     const Array * array =  new Array(ss.str(), 0);
     if (cachedStringArrays.count(array) == 0) {
       // Cache miss

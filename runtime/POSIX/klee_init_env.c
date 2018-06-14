@@ -63,12 +63,12 @@ static int __streq(const char *a, const char *b) {
 static char *__get_sym_str(int numChars, char *name) {
   int i;
   char *s = malloc(numChars+1);
+  markString(s);
   klee_mark_global(s);
   klee_make_symbolic(s, numChars+1, name);
-  markString(s);
 
-  for (i=0; i<numChars; i++)
-    klee_posix_prefer_cex(s, __isprint(s[i]));
+ // for (i=0; i<numChars; i++)
+ //   klee_posix_prefer_cex(s, __isprint(s[i]));
   
   s[numChars] = '\0';
   return s;
