@@ -174,6 +174,7 @@ void Expr::printKind(llvm::raw_ostream &os, Kind k) {
     X(Str_Substr);
     X(Str_Length);
     X(Str_Concat);
+    X(Str_Prefix);
     X(Str_Suffix);
     X(Str_Contains);
     X(Str_Compare);
@@ -212,6 +213,7 @@ unsigned StrLengthExpr::computeHash()        {static unsigned value = 0x9d425ff0
 unsigned StrSubstrExpr::computeHash()        {static unsigned value = 0xad425ff0;hashValue = value++;return hashValue;}
 unsigned StrCharAtExpr::computeHash()        {static unsigned value = 0xbd425ff0;hashValue = value++;return hashValue;}
 unsigned StrConcatExpr::computeHash()        {static unsigned value = 0xcd121ff0;hashValue = value++;return hashValue;}
+unsigned StrPrefixExpr::computeHash()        {static unsigned value = 0xca1131f0;hashValue = value++;return hashValue;}
 unsigned StrSuffixExpr::computeHash()        {static unsigned value = 0xcd1bb1f0;hashValue = value++;return hashValue;}
 unsigned StrContainsExpr::computeHash()      {static unsigned value = 0xc22cb1f0;hashValue = value++;return hashValue;}
 unsigned StrFirstIdxOfExpr::computeHash()    {static unsigned value = 0xcd333ff0;hashValue = value++;return hashValue;}

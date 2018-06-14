@@ -711,7 +711,7 @@ Z3ASTHandle Z3Builder::constructActual(ref<Expr> e, int *width_out) {
   			Z3_mk_int(ctx,1,Z3_mk_int_sort(ctx)),
   			Z3_mk_int(ctx,0,Z3_mk_int_sort(ctx))),
   		ctx);
-      *width_out = Expr::Int8;
+      *width_out = Expr::Bool;
       return result;  	
   }
   case Expr::Str_Length:
@@ -742,6 +742,21 @@ Z3ASTHandle Z3Builder::constructActual(ref<Expr> e, int *width_out) {
     return result;
   }
 
+  case Expr::Str_Prefix:
+  {
+   	int irrelevant_width=0;
+  	StrPrefixExpr *se = (StrPrefixExpr *) e.get();
+
+    Z3ASTHandle result = Z3ASTHandle(
+		  Z3_mk_seq_prefix(
+		  	ctx,
+		  	constructActual(se->prefix,&irrelevant_width),
+		  	constructActual(se->s     ,&irrelevant_width)),
+		  ctx);
+    *width_out = Expr::Bool;
+    return result;
+  }
+
   case Expr::Str_Suffix:
   {
    	int irrelevant_width=0;
@@ -753,7 +768,7 @@ Z3ASTHandle Z3Builder::constructActual(ref<Expr> e, int *width_out) {
 		  	constructActual(se->suffix,&irrelevant_width),
 		  	constructActual(se->s     ,&irrelevant_width)),
 		  ctx);
-    *width_out = Expr::Int8;
+    *width_out = Expr::Bool;
     return result;
   }
 
@@ -768,7 +783,7 @@ Z3ASTHandle Z3Builder::constructActual(ref<Expr> e, int *width_out) {
 		  	constructActual(sc->haystack,&irrelevant_width),
 		  	constructActual(sc->needle ,&irrelevant_width)),
 		  ctx);
-    *width_out = Expr::Int8;
+    *width_out = Expr::Bool;
     return result;
   }
 

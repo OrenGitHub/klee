@@ -127,11 +127,12 @@ namespace klee {
     HANDLER(handleStrcmp);
     HANDLER(handleStrncmp);
     HANDLER(handleStrncasecmp);
+    HANDLER(handleStrcspn);
     HANDLER(handleStrcpy);
     HANDLER(handleStrncpy);
     HANDLER(handleBREAKPOINT);
     HANDLER(handle_da_loop_killer_f1);
-    //HANDLER(handle_da_loop_killer_f1);
+    HANDLER(handle_da_loop_killer_f2);
     //HANDLER(handle_da_loop_killer_f1);
     //HANDLER(handle_da_loop_killer_f1);
     //HANDLER(handle_da_loop_killer_f1);

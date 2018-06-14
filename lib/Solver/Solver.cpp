@@ -33,7 +33,12 @@ void Solver::setCoreSolverTimeout(double timeout) {
     impl->setCoreSolverTimeout(timeout);
 }
 
-bool Solver::evaluate(const Query& query, Validity &result) {
+bool Solver::evaluate(const Query& query, Validity &result)
+{
+  if (query.expr->getWidth() != Expr::Bool)
+  {
+    query.expr->dump();
+  }
   assert(query.expr->getWidth() == Expr::Bool && "Invalid expression type!");
 
   // Maintain invariants implementations expect.

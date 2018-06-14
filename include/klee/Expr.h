@@ -108,7 +108,8 @@ public:
   enum Type {
       BitVector = 0,
       Integer,
-      String
+      String,
+      Regex
   };
   
   enum Kind {
@@ -147,6 +148,7 @@ public:
 	Str_CharAt,
 	Str_Substr,
 	Str_Concat,
+	Str_Prefix,
 	Str_Suffix,
 	Str_Length,
 	Str_Compare,
@@ -154,6 +156,13 @@ public:
 	Str_FirstIdxOf,
 	Str_FromBitVec8,
 	BitVector8_Var,
+
+	// Regex
+	Regex_Union,
+	Regex_fromStr,
+	Regex_KleeneStar,
+	Regex_Range,
+	Regex_StrInRegex,
 
   BvToInt,
   //ExtractedInt,
@@ -274,6 +283,7 @@ public:
   //
   bool isInteger() const {return type == Type::Integer;}
   bool isString() const {return type == Type::String;}
+  bool isRegex()  const {return type == Type::String;}
   bool isBitVector() const {return type == Type::BitVector;}
   Type getType() const {return type;}
 
@@ -1020,6 +1030,10 @@ public:
 		haystack(in_haystack),
 		needle(in_needle) {
         type = Type::Integer;
+        if (!haystack->isString())
+        {
+        	int OrenIshShalom=100;
+        }
         assert(haystack->isString());
         assert(needle->isString());  
 	}
@@ -1049,6 +1063,129 @@ public:
 														}
 	virtual ref<Expr> rebuild(ref<Expr> kids[]) const { return create(kids[0],kids[1]); }
 	static bool classof(const Expr *E) { return E->getKind() == Expr::Str_FirstIdxOf; }
+	static bool classof(const ConstantExpr *) { return false; }	
+};
+
+class RegexFromStrExpr : public Expr {
+public:
+	ref<Expr> s;
+	
+	RegexFromStrExpr(
+		const ref<Expr> &in_s)
+		:
+		s(in_s)
+		{
+			type = Type::Regex;
+			assert(s->isString());
+		}
+	virtual unsigned computeHash();
+
+public:
+	static ref<Expr> create(const ref<Expr> &in_s)
+	{
+		return RegexFromStrExpr::alloc(in_s);
+	}
+	
+	static ref<Expr> alloc(const ref<Expr> &in_s)
+	{
+		ref<Expr> res(new RegexFromStrExpr(in_s));
+		res->computeHash();
+		return res;
+	}
+	virtual int compareContents(const Expr &b)  const {return   0;}		
+	virtual Kind      getKind()                 const {return   Expr::Regex_fromStr;}
+	virtual Width     getWidth()                const {return   Expr::Regex;}
+	virtual unsigned  getNumKids()              const {return   1;}
+	virtual ref<Expr> getKid(unsigned int i)    const	{
+															if(i==0){return s;}
+															return 0;
+														}
+	virtual ref<Expr> rebuild(ref<Expr> kids[]) const { return create(kids[0]); }
+	static bool classof(const Expr *E) { return E->getKind() == Expr::Regex_fromStr; }
+	static bool classof(const ConstantExpr *) { return false; }	
+};
+
+class RegexUnionExpr : public Expr {
+public:
+	ref<Expr> s1;
+	ref<Expr> s2;
+	
+	RegexUnionExpr(
+		const ref<Expr> &in_s1,
+		const ref<Expr> &in_s2)
+		:
+		s1(in_s1),
+		s2(in_s2)
+		{
+			type = Type::Regex;
+			assert(s1->isRegex());
+			assert(s2->isRegex());
+		}
+	virtual unsigned computeHash();
+
+public:
+	static ref<Expr> create(const ref<Expr> &in_s1,const ref<Expr> &in_s2)
+	{
+		return RegexUnionExpr::alloc(in_s1,in_s2);
+	}
+	
+	static ref<Expr> alloc(const ref<Expr> &in_s1,const ref<Expr> &in_s2)
+	{
+		ref<Expr> res(new RegexUnionExpr(in_s1,in_s2));
+		res->computeHash();
+		return res;
+	}
+	virtual int compareContents(const Expr &b)  const {return   0;}		
+	virtual Kind      getKind()                 const {return   Expr::Regex_Union;}
+	virtual Width     getWidth()                const {return   Expr::Regex;}
+	virtual unsigned  getNumKids()              const {return   2;}
+	virtual ref<Expr> getKid(unsigned int i)    const	{
+															if(i==0){return s1;}
+															if(i==1){return s2;}
+															return 0;
+														}
+	virtual ref<Expr> rebuild(ref<Expr> kids[]) const { return create(kids[0],kids[1]); }
+	static bool classof(const Expr *E) { return E->getKind() == Expr::Regex_Union; }
+	static bool classof(const ConstantExpr *) { return false; }	
+};
+
+class RegexKleeneStarExpr : public Expr {
+public:
+	ref<Expr> s;
+	
+	RegexKleeneStarExpr(
+		const ref<Expr> &in_s)
+		:
+		s(in_s)
+		{
+			type = Type::Regex;
+			assert(s->isRegex());
+		}
+
+	virtual unsigned computeHash();
+
+public:
+	static ref<Expr> create(const ref<Expr> &in_s)
+	{
+		return RegexKleeneStarExpr::alloc(in_s);
+	}
+	
+	static ref<Expr> alloc(const ref<Expr> &in_s)
+	{
+		ref<Expr> res(new RegexKleeneStarExpr(in_s));
+		res->computeHash();
+		return res;
+	}
+	virtual int compareContents(const Expr &b)  const {return   0;}		
+	virtual Kind      getKind()                 const {return   Expr::Regex_Union;}
+	virtual Width     getWidth()                const {return   Expr::InvalidWidth;}
+	virtual unsigned  getNumKids()              const {return   1;}
+	virtual ref<Expr> getKid(unsigned int i)    const {
+															if(i==0){return s;}
+															return 0;
+													  }
+	virtual ref<Expr> rebuild(ref<Expr> kids[]) const { return create(kids[0]); }
+	static bool classof(const Expr *E) { return E->getKind() == Expr::Regex_KleeneStar; }
 	static bool classof(const ConstantExpr *) { return false; }	
 };
 
@@ -1084,7 +1221,7 @@ public:
 	}
 	virtual int compareContents(const Expr &b)  const {return   0;}		
 	virtual Kind      getKind()                 const {return   Expr::Str_Contains;}
-	virtual Width     getWidth()                const {return   Expr::Int8;}
+	virtual Width     getWidth()                const {return   Expr::Bool;}
 	virtual unsigned  getNumKids()              const {return    2;}
 	virtual ref<Expr> getKid(unsigned int i)    const	{
 															if(i==0){return haystack;}
@@ -1093,6 +1230,50 @@ public:
 														}
 	virtual ref<Expr> rebuild(ref<Expr> kids[]) const { return create(kids[0],kids[1]); }
 	static bool classof(const Expr *E) { return E->getKind() == Expr::Str_Contains; }
+	static bool classof(const ConstantExpr *) { return false; }	
+};
+
+class StrPrefixExpr : public Expr {
+public:
+	ref <Expr> s;
+	ref <Expr> prefix;
+	
+	StrPrefixExpr(
+		const ref<Expr> &in_s,
+		const ref<Expr> &in_prefix)
+		:
+		s(in_s),
+		prefix(in_prefix) {
+		// type = Type::;
+		assert(s->isString());
+		assert(prefix->isString());
+	}
+
+	virtual unsigned computeHash();
+
+public:
+	static ref<Expr> create(const ref<Expr> &in_s,const ref<Expr> &in_prefix)
+	{
+		return StrPrefixExpr::alloc(in_s,in_prefix);
+	}
+	
+	static ref<Expr> alloc(const ref<Expr> &in_s,const ref<Expr> &in_prefix)
+	{
+		ref<Expr> res(new StrPrefixExpr(in_s,in_prefix));
+		res->computeHash();
+		return res;
+	}
+	virtual int compareContents(const Expr &b)  const {return   0;}		
+	virtual Kind      getKind()                 const {return   Expr::Str_Prefix;}
+	virtual Width     getWidth()                const {return   Expr::Bool;}
+	virtual unsigned  getNumKids()              const {return    2;}
+	virtual ref<Expr> getKid(unsigned int i)    const	{
+															if(i==0){return s;}
+															if(i==1){return prefix;}
+															return 0;
+														}
+	virtual ref<Expr> rebuild(ref<Expr> kids[]) const { return create(kids[0],kids[1]); }
+	static bool classof(const Expr *E) { return E->getKind() == Expr::Str_Prefix; }
 	static bool classof(const ConstantExpr *) { return false; }	
 };
 
@@ -1107,7 +1288,7 @@ public:
 		:
 		s(in_s),
 		suffix(in_suffix) {
-		type = Type::Integer;
+		// type = Type::Integer;
 		assert(s->isString());
 		assert(suffix->isString());
 	}
@@ -1128,7 +1309,7 @@ public:
 	}
 	virtual int compareContents(const Expr &b)  const {return   0;}		
 	virtual Kind      getKind()                 const {return   Expr::Str_Suffix;}
-	virtual Width     getWidth()                const {return   Expr::Int8;}
+	virtual Width     getWidth()                const {return   Expr::Bool;}
 	virtual unsigned  getNumKids()              const {return    2;}
 	virtual ref<Expr> getKid(unsigned int i)    const	{
 															if(i==0){return s;}
@@ -1350,6 +1531,7 @@ public:
 	static bool classof(const ConstantExpr *) { return false; }	
 };
 
+// this seems redundant
 class StrCmpExpr : public Expr {
 public:
 	ref<Expr> s1;

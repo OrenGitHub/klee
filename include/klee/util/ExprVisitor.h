@@ -88,6 +88,7 @@ namespace klee {
     virtual Action visitStrCompare(const StrCmpExpr&);
     virtual Action visitFirstIndexOf(const StrFirstIdxOfExpr&);
     virtual Action visitConcatStringsExpr(const StrConcatExpr&);
+    virtual Action visitPrefixStringsExpr(const StrPrefixExpr&);
     virtual Action visitSuffixStringsExpr(const StrSuffixExpr&);
     virtual Action visitContainsStringsExpr(const StrContainsExpr&);
     virtual Action visitStrFromBv8(const StrFromBitVector8Expr&);
