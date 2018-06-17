@@ -731,9 +731,10 @@ Z3ASTHandle Z3Builder::constructActual(ref<Expr> e, int *width_out) {
    	int irrelevant_width=0;
   	StrConcatExpr *sc = (StrConcatExpr *) e.get();
 
-	Z3_ast params[2];
-	params[0]=constructActual(sc->s1,&irrelevant_width);
-	params[1]=constructActual(sc->s2,&irrelevant_width);
+	Z3ASTHandle left  = constructActual(sc->s1,&irrelevant_width);
+	Z3ASTHandle right = constructActual(sc->s2,&irrelevant_width);
+
+	Z3_ast params[2] = {left,right};
 
     Z3ASTHandle result = Z3ASTHandle(
 		  Z3_mk_seq_concat(ctx,2,params),
@@ -783,6 +784,70 @@ Z3ASTHandle Z3Builder::constructActual(ref<Expr> e, int *width_out) {
 		  	constructActual(sc->haystack,&irrelevant_width),
 		  	constructActual(sc->needle ,&irrelevant_width)),
 		  ctx);
+    *width_out = Expr::Bool;
+    return result;
+  }
+
+  case (Expr::Regex_Union):
+  {
+   	int irrelevant_width=0;
+  	RegexUnionExpr *ru = (RegexUnionExpr *) e.get();
+
+    Z3ASTHandle left  = constructActual(ru->r1,&irrelevant_width);
+    Z3ASTHandle right = constructActual(ru->r2,&irrelevant_width);
+
+    Z3_ast union_params[2]={left,right};
+    
+    Z3ASTHandle result = Z3ASTHandle(
+		  Z3_mk_re_union(
+		  	ctx,
+		  	2,
+		  	union_params),
+		  ctx);
+    // *width_out = Expr::Regex;
+    return result;
+  }
+
+  case (Expr::Regex_KleeneStar):
+  {
+   	int irrelevant_width=0;
+  	RegexKleeneStarExpr *rk = (RegexKleeneStarExpr *) e.get();
+
+    Z3ASTHandle result = Z3ASTHandle(
+		  Z3_mk_re_star(
+		  	ctx,
+			constructActual(rk->r,&irrelevant_width)),
+		  ctx);
+    *width_out = Expr::Regex;
+    return result;
+  }
+
+  case (Expr::Regex_fromStr):
+  {
+   	int irrelevant_width=0;
+  	RegexFromStrExpr *rs = (RegexFromStrExpr *) e.get();
+
+    Z3ASTHandle result = Z3ASTHandle(
+		  Z3_mk_seq_to_re(
+		  	ctx,
+		  	constructActual(rs->s,&irrelevant_width)),
+		  ctx);
+    // *width_out = Expr::Regex;
+    return result;
+  }
+
+  case (Expr::Regex_StrInRegex):
+  {
+  	StrInRegexExpr *str_in_re = (StrInRegexExpr *) e.get();
+
+    *width_out = Expr::Bool;
+    Z3ASTHandle result = Z3ASTHandle(
+		  Z3_mk_seq_in_re(
+		  	ctx,
+		  	constructActual(str_in_re->s,width_out),
+		  	constructActual(str_in_re->r,width_out)),
+		  ctx);
+
     *width_out = Expr::Bool;
     return result;
   }
@@ -1051,7 +1116,8 @@ Z3ASTHandle Z3Builder::constructActual(ref<Expr> e, int *width_out) {
 			firstString,
 			secondString),
 		ctx);
-				
+
+  	*width_out = Expr::Bool;
 	return result2;
   }
   case Expr::Eq: {

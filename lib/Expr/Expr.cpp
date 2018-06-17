@@ -180,6 +180,10 @@ void Expr::printKind(llvm::raw_ostream &os, Kind k) {
     X(Str_Compare);
     X(Str_FirstIdxOf);
     X(Str_FromBitVec8);
+    X(Regex_Union);
+    X(Regex_fromStr);
+    X(Regex_StrInRegex);
+    X(Regex_KleeneStar);
     X(BvToInt);
 #undef X
   default:
@@ -218,6 +222,11 @@ unsigned StrSuffixExpr::computeHash()        {static unsigned value = 0xcd1bb1f0
 unsigned StrContainsExpr::computeHash()      {static unsigned value = 0xc22cb1f0;hashValue = value++;return hashValue;}
 unsigned StrFirstIdxOfExpr::computeHash()    {static unsigned value = 0xcd333ff0;hashValue = value++;return hashValue;}
 unsigned StrFromBitVector8Expr::computeHash(){static unsigned value = 0xe0000490;hashValue = value++;return hashValue;}
+unsigned RegexFromStrExpr::computeHash()     {static unsigned value = 0xeba00490;hashValue = value++;return hashValue;}
+unsigned RegexUnionExpr::computeHash()       {static unsigned value = 0xe00cc490;hashValue = value++;return hashValue;}
+unsigned RegexKleeneStarExpr::computeHash()  {static unsigned value = 0xeaa00490;hashValue = value++;return hashValue;}
+unsigned StrInRegexExpr::computeHash()       {static unsigned value = 0xe0bb0490;hashValue = value++;return hashValue;}
+
 unsigned BvToIntExpr::computeHash()          {static unsigned value = 0xe00a0490;hashValue = value++;return hashValue;}
 
 unsigned ConstantExpr::computeHash() {

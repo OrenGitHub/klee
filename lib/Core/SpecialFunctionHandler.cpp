@@ -105,6 +105,7 @@ static SpecialFunctionHandler::HandlerInfo handlerInfo[] = {
   add("strlen",                      handleStrlen,                    true),
   add("strnlen",                     handleStrnlen,                   true),
   add("f2",                          handle_da_loop_killer_f2,        true),
+  add("f1",                          handle_da_loop_killer_f1,        true),
   add("BREAKPOINT",                  handleBREAKPOINT,                false),
   add("klee_get_value_i32", handleGetValue, true),
   add("klee_get_value_i64", handleGetValue, true),
@@ -1464,82 +1465,104 @@ void SpecialFunctionHandler::handle_da_loop_killer_f1(
 	ref<Expr> size = SubExpr::create(mos->getIntSizeExpr(),offset);
 	ref<Expr> s = StrSubstrExpr::create(AB,offset,size);
 	
-	/****************************************************/
-	/* [4] Assemble pre + res to express the fact that: */
-	/*     [-] pre does not contain "a" or "b"          */
-	/*     [-] res[0] is not "a" nor "b"                */
-	/****************************************************/
-	ref<Expr> c   = StrVarExpr::create(std::string("c"  )+std::to_string(tmpStrVarSerialIdx++));
-	ref<Expr> res = StrVarExpr::create(std::string("res")+std::to_string(tmpStrVarSerialIdx++));
+	/********************************************************/
+	/* [4] Define the Regex A and from the string "A"       */
+	/*     Define the Regex B and from the string "B"       */
+	/*                                                      */
+	/*     This is equivalent to:                           */
+	/*                                                      */
+	/*     (define-fun A () (RegEx String) (str.to.re "A")) */
+    /*     (define-fun B () (RegEx String) (str.to.re "B")) */
+	/*                                                      */
+	/********************************************************/
+	ref<Expr> letter_A = StrConstExpr::create("A");
+	ref<Expr> letter_B = StrConstExpr::create("B");
+	ref<Expr> A = RegexFromStrExpr::create(letter_A);
+	ref<Expr> B = RegexFromStrExpr::create(letter_B);
+
+	/*************************************************************/
+	/* [5] Define the Regex letter = (A|B)                       */
+	/*     Define the Regex letter*                              */
+	/*                                                           */
+	/*     This is equivalent to:                                */
+	/*                                                           */
+	/*     (define-fun letter  () (RegEx String) (re.union A B)) */
+	/*     (define-fun letters () (RegEx String) (re.*  letter)) */
+	/*                                                           */
+	/*************************************************************/
+	ref<Expr> letter  = RegexUnionExpr::create(A,B);
+	ref<Expr> letters = RegexKleeneStarExpr::create(letter);
+
+	/***********************************************/
+	/* [6] pre contains only A's or B's            */
+	/*                                             */
+	/*     This is equivalent to:                  */
+	/*                                             */
+	/*     (assert (str.in.re pre letter_strings)) */
+	/*                                             */
+	/***********************************************/
 	ref<Expr> pre = StrVarExpr::create(std::string("pre")+std::to_string(tmpStrVarSerialIdx++));
+	ref<Expr> only_letters_inside_pre = StrInRegexExpr::create(pre,letters);
 
-	/********************/
-	/* [-] c is not "a" */
-	/********************/
-	executor.addConstraint(state,
-		NotExpr::create(
-			StrEqExpr::create(
-				c,
-				StrConstExpr::create("a"))));
-				
-	/********************/
-	/* [-] c is not "b" */
-	/********************/
-	executor.addConstraint(state,
-		NotExpr::create(
-			StrEqExpr::create(
-				c,
-				StrConstExpr::create("b"))));
-
-	/*********************/
-	/* [-] c is length 1 */
-	/*********************/
-	executor.addConstraint(state,
-		EqExpr::create(
-			StrLengthExpr::create(c),
-			ConstantExpr::create(1,Expr::Int64)));
+	/*********************************************/
+	/* [7] (suf[0] != A) and (suf[0] != B)       */
+	/*                                           */
+	/*     This is equivalent to:                */
+	/*                                           */
+	/*     (assert (= (suf_at_0 (str.at suf 0))) */
+	/*                                           */
+	/*     (assert (and (not (= suf_at_0 "A"))   */
+	/*                  (not (= suf_at_0 "B")))) */
+	/*                                           */
+	/*********************************************/
+	ref<Expr> suf = StrVarExpr::create(std::string("suf")+std::to_string(tmpStrVarSerialIdx++));
+	ref<Expr> suf_at_0 = StrCharAtExpr::create(
+		suf,
+		BvToIntExpr::create(
+			ConstantExpr::create(0,Expr::Int64)));
+	ref<Expr> first_place_in_suf_is_not_a_letter = AndExpr::create(
+		NotExpr::create(StrEqExpr::create(suf_at_0,letter_A)),
+		NotExpr::create(StrEqExpr::create(suf_at_0,letter_B)));
 	
-	/******************************/
-	/* [-] pre does not contain c */
-	/******************************/
-	executor.addConstraint(state,
-		EqExpr::create(
-			StrFirstIdxOfExpr::create(pre,c),
-			ConstantExpr::create(-1,Expr::Int64)));
-
-	/***********************/
-	/* [-] s == pre ++ res */
-	/***********************/
-	executor.addConstraint(state,
+	/***************************************/
+	/* [8] s = pre ++ suf                  */
+	/*                                     */
+	/*     This is equivalent to:          */
+	/*                                     */
+	/*     (assert (= s (str.++ pre suf))) */
+	/*                                     */
+	/***************************************/
+	ref<Expr> s_equals_pre_concat_suf =
 		StrEqExpr::create(
 			s,
-			StrConcatExpr::create(pre,res)));
+			StrConcatExpr::create(pre,suf));
 
-	/*************************/
-	/* [-] res[0] is not "a" */
-	/*************************/
-	executor.addConstraint(state,
-		NotExpr::create(
-			StrEqExpr::create(
-				StrCharAtExpr::create(res,ConstantExpr::create(0,Expr::Int64)),
-				StrConstExpr::create("a"))));
+	/***********************************************/
+	/* [9] Finally, add constraints themselves ... */
+	/***********************************************/
+	executor.addConstraint(state,only_letters_inside_pre);
+	executor.addConstraint(state,first_place_in_suf_is_not_a_letter);
+	executor.addConstraint(state,s_equals_pre_concat_suf);
 
-	/*************************/
-	/* [-] res[0] is not "b" */
-	/*************************/
-	executor.addConstraint(state,
-		NotExpr::create(
-			StrEqExpr::create(
-				StrCharAtExpr::create(res,ConstantExpr::create(0,Expr::Int64)),
-				StrConstExpr::create("b"))));
+	//bool result;
+	
+	//executor.solver->mayBeTrue(
+	//	state, 
+	//	first_place_in_suf_is_not_a_letter,
+	//	result);
 
-	/*****************************/
-	/* [5] return s + strle(pre) */
-	/*****************************/
+	//if (result)
+	//{
+	//	assert(0);
+	//}
+
+	/******************************/
+	/* [10] return s + strle(pre) */
+	/******************************/
 	executor.bindLocal(target,state,
 		AddExpr::create(
 			arguments[0],
-			StrLengthExpr::create(pre)));
+			StrLengthExpr::create(pre)));	
 }
 
 void SpecialFunctionHandler::handle_da_loop_killer_f2(

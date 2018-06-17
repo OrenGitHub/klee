@@ -103,6 +103,10 @@ ref<Expr> ExprVisitor::visitActual(const ref<Expr> &e)
     case Expr::Str_Suffix:     res = visitSuffixStringsExpr(static_cast<StrSuffixExpr&>(ep)); break;
     case Expr::Str_Contains:   res = visitContainsStringsExpr(static_cast<StrContainsExpr&>(ep)); break;
     case Expr::Str_FromBitVec8: res = visitStrFromBv8(static_cast<StrFromBitVector8Expr&>(ep)); break;
+    case Expr::Regex_Union:      res = visitRegexUnion(     static_cast<RegexUnionExpr&>(ep)); break;
+    case Expr::Regex_fromStr:    res = visitRegexFromStr(   static_cast<RegexFromStrExpr&>(ep)); break;
+    case Expr::Regex_KleeneStar: res = visitRegexKleeneStar(static_cast<RegexKleeneStarExpr&>(ep)); break;
+    case Expr::Regex_StrInRegex: res = visitStrInRegex(     static_cast<StrInRegexExpr&>(ep)); break;
     case Expr::BvToInt: res = visitBvToInt(static_cast<BvToIntExpr&>(ep)); break;
 
 
@@ -168,6 +172,12 @@ ExprVisitor::Action ExprVisitor::visitPrefixStringsExpr(const StrPrefixExpr&) { 
 ExprVisitor::Action ExprVisitor::visitSuffixStringsExpr(const StrSuffixExpr&) { return Action::doChildren();}
 ExprVisitor::Action ExprVisitor::visitContainsStringsExpr(const StrContainsExpr&) { return Action::doChildren();}
 ExprVisitor::Action ExprVisitor::visitStrFromBv8(const StrFromBitVector8Expr&) { return Action::doChildren();}
+
+ExprVisitor::Action ExprVisitor::visitRegexUnion(     const RegexUnionExpr&)      { return Action::doChildren();}
+ExprVisitor::Action ExprVisitor::visitRegexFromStr(   const RegexFromStrExpr&)    { return Action::doChildren();}
+ExprVisitor::Action ExprVisitor::visitRegexKleeneStar(const RegexKleeneStarExpr&) { return Action::doChildren();}
+ExprVisitor::Action ExprVisitor::visitStrInRegex(     const StrInRegexExpr&)      { return Action::doChildren();}
+
 ExprVisitor::Action ExprVisitor::visitBvToInt(const BvToIntExpr&) { return Action::doChildren();}
 
 ExprVisitor::Action ExprVisitor::visitRead(const ReadExpr&) {

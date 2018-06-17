@@ -114,6 +114,8 @@ Z3SolverImpl::Z3SolverImpl()
     klee_message("Dumping Z3 queries to \"%s\"", Z3QueryDumpFile.c_str());
   }
 
+  // Z3_global_param_set("smt.string_solver", "z3str3");
+
   // Set verbosity
   if (Z3VerbosityLevel > 0) {
     std::string underlyingString;
