@@ -1,0 +1,32 @@
+>> Summary loop for: ./examples/input.c:23
+==========================================
+
+Basic Block ( while.cond49 )
+
+    tmp33 = s.addr
+    tmp34 = [ tmp33 ]
+    conv50 = tmp34
+    cmp51 = ( conv50 == 42 )
+    if ( cmp51 != 0) { goto land.rhs53 }
+    if ( cmp51 == 0) { goto land.end57 }
+
+Basic Block ( land.rhs53 )
+
+    tmp35 = s.addr
+    add.ptr = tmp35 + 1
+    tmp36 = [ add.ptr ]
+    conv54 = tmp36
+    cmp55 = ( conv54 != 40 )
+    goto land.end57
+
+Basic Block ( land.end57 )
+
+    if ( tmp37 != 0) { goto while.body58 }
+    if ( tmp37 == 0) { goto while.end60 }
+
+Basic Block ( while.body58 )
+
+    tmp38 = s.addr
+    incdec.ptr59 = tmp38 + 1
+    s.addr = incdec.ptr59
+    goto while.cond49
