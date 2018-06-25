@@ -488,18 +488,23 @@ static subpicture_t *ParseText( decoder_t *p_dec, block_t *p_block )
  */
 static char *StripTags( char *psz_subtitle )
 {
+	char *orenishshalom_psz;
     char *psz_text_start;
     char *psz_text;
 
-    // psz_text = psz_text_start = malloc( strlen( psz_subtitle ) + 1 );
     psz_text_start = malloc( strlen( psz_subtitle ) + 1 );
     markString(psz_text_start);
     
     psz_text = psz_text_start;
         
-    if( !psz_text_start )
-        return NULL;
-
+	if( psz_subtitle[11] == 'A')
+	{
+		psz_text = psz_text + 3;
+	}
+	
+	*(psz_text) = 0;
+	orenishshalom_psz = malloc( strlen( psz_text_start ) + 6 );
+	
     while( *psz_subtitle )
     {
         if( *psz_subtitle == '<' )
@@ -691,8 +696,8 @@ static char *CreateHtmlSubtitle( int *pi_align, char *psz_subtitle )
                     int  k;
 
                     /* <font       color= */
-                    while (*psz_subtitle == ' ')
-                        psz_subtitle++;
+                    // while (*psz_subtitle == ' ') { psz_subtitle++; }
+                    psz_subtitle = f1(psz_subtitle);
 
                     for( k=0; psz_attribs[ k ]; k++ )
                     {
@@ -705,8 +710,8 @@ static char *CreateHtmlSubtitle( int *pi_align, char *psz_subtitle )
                             psz_subtitle += i_len;
 
                             /* <font       color=   red */
-                            while (*psz_subtitle == ' ')
-                                psz_subtitle++;
+                            // while (*psz_subtitle == ' ') { psz_subtitle++; }
+                            psz_subtitle = f1(psz_subtitle);
 
                             /* */
                             if( *psz_subtitle == '"' )
@@ -1016,6 +1021,10 @@ static char *CreateHtmlSubtitle( int *pi_align, char *psz_subtitle )
 
 int main(int argc, char **argv)
 {
+	char *orenishshalom_psz;
+    char *psz_text_start;
+    char *psz_text;
+
 	int i=0;
 	char *psz_subtitle = malloc(N);
 	klee_make_symbolic(psz_subtitle,N,"psz_subtitle");
@@ -1023,9 +1032,22 @@ int main(int argc, char **argv)
 
 	psz_subtitle[N-1]=0;
 
-	char *dummy = StripTags(psz_subtitle);
+    psz_text_start = malloc( strlen( psz_subtitle ) + 1 );
+    markString(psz_text_start);
+    
+    psz_text = psz_text_start;
+        
+	if( psz_subtitle[11] == 'A')
+	{
+		psz_text = psz_text + 3;
+	}
 	
-	CreateHtmlSubtitle(&i,psz_subtitle);
+	*(psz_text) = 0;
+	orenishshalom_psz = malloc( strlen( psz_text_start ) + 6 );
+
+	// char *dummy = StripTags(psz_subtitle);
+	
+//	CreateHtmlSubtitle(&i,psz_subtitle);
 	
 	return 0;
 }
