@@ -979,11 +979,15 @@ void SpecialFunctionHandler::handleMarkString(
          ie = rl.end(); it != ie; ++it) {
     MemoryObject *mo = const_cast<MemoryObject*>(it->first.first);
     ObjectState* wos = const_cast<ObjectState*>(it->first.second);
+    if(wos->serial >= 0) {
+        klee_warning("Marking string as a string again ... IGNORING");
+        state.dumpStack(errs());
+        continue;
+    }
     wos->serial = ++numABSerials;
     wos->version = 0;
     std::string ab_name = wos->getABSerial();
     errs() << "Creating " << ab_name << " at:\n:";
-//    state.dumpStack(errs());
     if(mo->isGlobal && isa<ConstantExpr>(wos->read8(0))) {
         const GlobalVariable* v = dynamic_cast<const GlobalVariable*>(mo->allocSite);
         v->dump();

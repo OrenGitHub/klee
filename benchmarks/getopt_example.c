@@ -47,6 +47,8 @@ main (int argc, char **argv)
   int option_index;
   printf("argv %s %d\n",argv[1], argc);
 
+  int lcnt = 0;
+
   while ((c = getopt_long (argc, argv, short_opts, long_options, &option_index)) != -1) {
     printf("!!!!! C is %c\n",c);
     switch (c)
@@ -69,10 +71,16 @@ main (int argc, char **argv)
       default:
         assert(0 && "Shouldn't happen");
       }
+     lcnt++;
+     if(lcnt > 2) {
+      break;
+     }
   }
 
   printf ("aflag = %d, bflag = %d\n",
           aflag, bflag);
+
+  exit(0);
 
   if(aflag == 1 && bflag == 1) {
       assert(0 && "GOAL!");
