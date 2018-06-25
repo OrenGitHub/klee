@@ -3,6 +3,7 @@
 /*************************/
 #include "llvm/Pass.h"
 #include "llvm/IR/Function.h"
+#include "llvm/IR/DebugInfo.h"
 #include "llvm/IR/Constants.h"
 #include "llvm/Analysis/LoopPass.h"
 #include "llvm/Analysis/LoopInfo.h"
@@ -89,6 +90,21 @@ struct StaticAnalyzer : public LoopPass
 			return false;
 		}
 	}
+	
+	bool Is_Used_Outside_This_loop(Loop *loop, Value *v)
+	{
+		int n=0;
+		int numUses = v->getNumUses();
+		for (auto it = loop->block_begin(); it != loop->block_end(); it++)
+		{
+			if (v->isUsedInBasicBlock(*it))
+			{
+				n++;
+			}
+		}
+		if (n == numUses) return false;
+		else              return true;
+	}
 
 	bool MoreThanOneStringVar(Loop *loop)
 	{
@@ -102,9 +118,9 @@ struct StaticAnalyzer : public LoopPass
 		myfile.open(filename);
 
 		myfile << ">> Summary loop for: ";
-		myfile << (cast<DIScope>(loop->getStartLoc().getScope())->getFilename()).str();
+		//myfile << (cast<DIScope>(loop->getStartLoc().getScope())->getFilename()).str();
 		myfile << ":";
-		myfile << loop->getStartLoc().getLine();
+		//myfile << loop->getStartLoc().getLine();
 		myfile << "\n==========================================\n";
 
 		for (auto it = loop->block_begin(); it != loop->block_end(); it++)
@@ -120,8 +136,14 @@ struct StaticAnalyzer : public LoopPass
 				std::string dst = inst->getName().str();
 				temps.insert(dst);
 				
+				/****************************************************/
+				/* [2] Inspect if any of the LLVM IR temporaries is */
+				/*     used oudside the loop.                       */
+				/****************************************************/
+				Is_Used_Outside_This_loop(loop,(Instruction *) inst);
+				
 				/*************************************/
-				/* [2] Inspect arguments of commands */
+				/* [3] Inspect arguments of commands */
 				/*************************************/
 				Instruction *i = (Instruction *) inst;
 				const char *opcode = i->getOpcodeName();
@@ -175,7 +197,8 @@ struct StaticAnalyzer : public LoopPass
 					}
 					else
 					{
-						return true;
+						//myfile.close();
+						//return true;
 					}
 				}
 				else if (strncmp(opcode,"sext",4) == 0)
@@ -207,7 +230,8 @@ struct StaticAnalyzer : public LoopPass
 					}
 					else
 					{
-						return true;
+						//myfile.close();
+						//return true;
 					}
 					myfile << " )";
 					myfile << "\n";
@@ -245,7 +269,7 @@ struct StaticAnalyzer : public LoopPass
 		/***************************************************/
 		/* [0] Print the function name containing the loop */
 		/***************************************************/
-		PrintLoopLocation(loop);
+		// PrintLoopLocation(loop);
 
 		/**************************************************************/
 		/* [1] Handle only loops WITHOUT nested sub-loops inside them */
