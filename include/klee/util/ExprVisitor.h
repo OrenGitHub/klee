@@ -92,6 +92,12 @@ namespace klee {
     virtual Action visitSuffixStringsExpr(const StrSuffixExpr&);
     virtual Action visitContainsStringsExpr(const StrContainsExpr&);
     virtual Action visitStrFromBv8(const StrFromBitVector8Expr&);
+
+    virtual Action visitRegexUnion(     const RegexUnionExpr&);
+    virtual Action visitRegexFromStr(   const RegexFromStrExpr&);
+    virtual Action visitRegexKleeneStar(const RegexKleeneStarExpr&);
+    virtual Action visitStrInRegex(     const StrInRegexExpr&);
+
     virtual Action visitBvToInt(const BvToIntExpr&);
   private:
     typedef ExprHashMap< ref<Expr> > visited_ty;

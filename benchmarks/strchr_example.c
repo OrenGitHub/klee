@@ -16,7 +16,7 @@
 /**********************/
 #include "klee/klee.h"
 
-char *f1(char *p)
+char *f51(char *p)
 {
 	while (p[0] == 'a' || p[0] == 'b')
 	{
@@ -30,8 +30,9 @@ char *f1(char *p)
 /************/
 int main(int argc, char **argv)
 {
+	int i=0;
 	char *p;
-	
+
 	p = malloc(20);
 	markString(p);
 	klee_make_symbolic(p,20,"p");
@@ -57,10 +58,11 @@ int main(int argc, char **argv)
 	p[18] =  0 ;
 	p[19] =  0 ;
 
-	p = f1(p);
+	p = f51(p);
 
-	if (p[0] == 'P')
+	while (p[i++] != 0)
 	{
-		assert(0);
+		int m = 999;
+		// assert(0);
 	}
 }

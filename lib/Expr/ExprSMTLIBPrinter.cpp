@@ -498,6 +498,16 @@ const char *ExprSMTLIBPrinter::getSMTLIBKeyword(const ref<Expr> &e)
   }
   case Expr::Str_Length:
     return "str.len";
+
+  case Expr::Regex_Union:
+    return "re.union";
+  case Expr::Regex_KleeneStar:
+    return "re.*";
+  case Expr::Regex_fromStr:
+    return "str.to.re";
+  case Expr::Regex_StrInRegex:
+    return "str.in.re";
+
   case Expr::BvToInt:
     return "bv2int";
 

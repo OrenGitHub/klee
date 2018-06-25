@@ -1,0 +1,8 @@
+>> Summary loop for: ./examples/input.c:27
+==========================================
+
+Basic Block ( while.cond61 )
+
+    tmp39 = s.addr
+    tmp40 = path
+    cmp62 = ( tmp39 >  

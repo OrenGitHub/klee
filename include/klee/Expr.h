@@ -109,7 +109,7 @@ public:
       BitVector = 0,
       Integer,
       String,
-      Regex
+      Regex = 179
   };
   
   enum Kind {
@@ -283,7 +283,7 @@ public:
   //
   bool isInteger() const {return type == Type::Integer;}
   bool isString() const {return type == Type::String;}
-  bool isRegex()  const {return type == Type::String;}
+  bool isRegex()  const {return type == Type::Regex;}
   bool isBitVector() const {return type == Type::BitVector;}
   Type getType() const {return type;}
 
@@ -1062,6 +1062,50 @@ public:
 	static bool classof(const ConstantExpr *) { return false; }	
 };
 
+class StrInRegexExpr : public Expr {
+public:
+	ref<Expr> s;
+	ref<Expr> r;
+	
+	StrInRegexExpr(
+		const ref<Expr> &in_s,
+		const ref<Expr> &in_r)
+		:
+		s(in_s),
+		r(in_r)
+		{
+			assert(s->isString());
+			assert(r->isRegex());
+		}
+	virtual unsigned computeHash();
+
+public:
+	static ref<Expr> create(const ref<Expr> &in_s,const ref<Expr> &in_r)
+	{
+		return StrInRegexExpr::alloc(in_s,in_r);
+	}
+	
+	static ref<Expr> alloc(const ref<Expr> &in_s,const ref<Expr> &in_r)
+	{
+		ref<Expr> res(new StrInRegexExpr(in_s,in_r));
+		res->computeHash();
+		return res;
+	}
+	virtual int compareContents(const Expr &b)  const {return   0;}		
+	virtual Kind      getKind()                 const {return   Expr::Regex_StrInRegex;}
+	virtual Width     getWidth()                const {return   Expr::Regex;}
+	virtual unsigned  getNumKids()              const {return   2;}
+	virtual ref<Expr> getKid(unsigned int i)    const	{
+															if(i==0){return s;}
+															if(i==1){return r;}
+															return 0;
+														}
+	virtual ref<Expr> rebuild(ref<Expr> kids[]) const { return create(kids[0],kids[1]); }
+	static bool classof(const Expr *E) { return E->getKind() == Expr::Regex_StrInRegex; }
+	static bool classof(const ConstantExpr *) { return false; }	
+};
+
+
 class RegexFromStrExpr : public Expr {
 public:
 	ref<Expr> s;
@@ -1103,31 +1147,31 @@ public:
 
 class RegexUnionExpr : public Expr {
 public:
-	ref<Expr> s1;
-	ref<Expr> s2;
+	ref<Expr> r1;
+	ref<Expr> r2;
 	
 	RegexUnionExpr(
-		const ref<Expr> &in_s1,
-		const ref<Expr> &in_s2)
+		const ref<Expr> &in_r1,
+		const ref<Expr> &in_r2)
 		:
-		s1(in_s1),
-		s2(in_s2)
+		r1(in_r1),
+		r2(in_r2)
 		{
 			type = Type::Regex;
-			assert(s1->isRegex());
-			assert(s2->isRegex());
+			assert(r1->isRegex());
+			assert(r2->isRegex());
 		}
 	virtual unsigned computeHash();
 
 public:
-	static ref<Expr> create(const ref<Expr> &in_s1,const ref<Expr> &in_s2)
+	static ref<Expr> create(const ref<Expr> &in_r1,const ref<Expr> &in_r2)
 	{
-		return RegexUnionExpr::alloc(in_s1,in_s2);
+		return RegexUnionExpr::alloc(in_r1,in_r2);
 	}
 	
-	static ref<Expr> alloc(const ref<Expr> &in_s1,const ref<Expr> &in_s2)
+	static ref<Expr> alloc(const ref<Expr> &in_r1,const ref<Expr> &in_r2)
 	{
-		ref<Expr> res(new RegexUnionExpr(in_s1,in_s2));
+		ref<Expr> res(new RegexUnionExpr(in_r1,in_r2));
 		res->computeHash();
 		return res;
 	}
@@ -1136,8 +1180,8 @@ public:
 	virtual Width     getWidth()                const {return   Expr::Regex;}
 	virtual unsigned  getNumKids()              const {return   2;}
 	virtual ref<Expr> getKid(unsigned int i)    const	{
-															if(i==0){return s1;}
-															if(i==1){return s2;}
+															if(i==0){return r1;}
+															if(i==1){return r2;}
 															return 0;
 														}
 	virtual ref<Expr> rebuild(ref<Expr> kids[]) const { return create(kids[0],kids[1]); }
@@ -1147,37 +1191,37 @@ public:
 
 class RegexKleeneStarExpr : public Expr {
 public:
-	ref<Expr> s;
+	ref<Expr> r;
 	
 	RegexKleeneStarExpr(
-		const ref<Expr> &in_s)
+		const ref<Expr> &in_r)
 		:
-		s(in_s)
+		r(in_r)
 		{
 			type = Type::Regex;
-			assert(s->isRegex());
+			assert(r->isRegex());
 		}
 
 	virtual unsigned computeHash();
 
 public:
-	static ref<Expr> create(const ref<Expr> &in_s)
+	static ref<Expr> create(const ref<Expr> &in_r)
 	{
-		return RegexKleeneStarExpr::alloc(in_s);
+		return RegexKleeneStarExpr::alloc(in_r);
 	}
 	
-	static ref<Expr> alloc(const ref<Expr> &in_s)
+	static ref<Expr> alloc(const ref<Expr> &in_r)
 	{
-		ref<Expr> res(new RegexKleeneStarExpr(in_s));
+		ref<Expr> res(new RegexKleeneStarExpr(in_r));
 		res->computeHash();
 		return res;
 	}
 	virtual int compareContents(const Expr &b)  const {return   0;}		
-	virtual Kind      getKind()                 const {return   Expr::Regex_Union;}
-	virtual Width     getWidth()                const {return   Expr::InvalidWidth;}
+	virtual Kind      getKind()                 const {return   Expr::Regex_KleeneStar;}
+	virtual Width     getWidth()                const {return   Expr::Regex;}
 	virtual unsigned  getNumKids()              const {return   1;}
 	virtual ref<Expr> getKid(unsigned int i)    const {
-															if(i==0){return s;}
+															if(i==0){return r;}
 															return 0;
 													  }
 	virtual ref<Expr> rebuild(ref<Expr> kids[]) const { return create(kids[0]); }
