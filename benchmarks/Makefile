@@ -37,10 +37,11 @@ phony_explicit:
 
 #run target, for example to run strcmp_example.bc use: make strcmp_example.run
 %.run: %.bc phony_explicit
-	klee -exit-on-error-type=Assert -posix-runtime -solver-backend=z3 -libc=uclibc  \
-	-use-cex-cache=0 -use-independent-solver=0 -use-query-log=solver:smt2 \
+	klee -exit-on-error-type=Assert -posix-runtime -solver-backend=z3 -libc=uclibc   \
+	-use-cex-cache=1 -use-independent-solver=1 -use-query-log=all:kquery -use-query-log=solver:smt2 \
 	-debug-z3-dump-queries=/tmp/Z3queries.txt  -debug-z3-log-api-interaction=/tmp/Z3queries.log $< $(ARGS)
 
+#	-only-output-states-covering-new \ 
 KTEST_FILE=klee-last/test000001.ktest
 export KTEST_FILE
 %.replay_run: %.o phony_explicit

@@ -188,12 +188,7 @@ std::string ObjectState::getABSerial() const {
       }
       assert(serial >= 0 && version >= 0 && "Can't get serial name of a non abstratc buffer object state");
       std::stringstream ss;
-      if(object->isGlobal) {
-          ss << "AB_" << object->name << "_" << serial << "_version_" << version;
-          return ss.str();
-      }
       ss << "AB_serial_" << serial << "_version_" << version;
-
       return ss.str();
 }
 /***/

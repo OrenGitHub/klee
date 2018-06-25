@@ -1030,10 +1030,6 @@ public:
 		haystack(in_haystack),
 		needle(in_needle) {
         type = Type::Integer;
-        if (!haystack->isString())
-        {
-        	int OrenIshShalom=100;
-        }
         assert(haystack->isString());
         assert(needle->isString());  
 	}
@@ -1887,7 +1883,7 @@ public:
         d.push_back((unsigned char)*value);
         value++;
     }
-    d.push_back('\0');
+//    d.push_back('\0');
 		return StrConstExpr::alloc(d);
 	}
 	static ref<Expr> create(std::string value)
@@ -1896,7 +1892,7 @@ public:
     for(auto &c : value) {
         d.push_back(c);
     }
-    d.push_back('\0');
+ //   d.push_back('\0');
 		return StrConstExpr::alloc(d);
 	}
 

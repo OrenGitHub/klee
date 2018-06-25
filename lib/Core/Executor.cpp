@@ -3377,7 +3377,8 @@ void Executor::executeMemoryOperation(ExecutionState &state,
 		static int index=0;
 		sprintf(name,"tempBitVec8_serial_%d",index++);
         ref<Expr> offset = mo->getOffsetExpr(address);		
-        errs() << "Reading mo serial " << os->serial << " version " << os->version << "\n";
+        errs() << "Reading mo serial " << os->serial << " version " << os->version << " " << os->getABSerial() << "\n";
+        //state.dumpStack(errs());
         //assert(dyn_cast<ConstantExpr>(offset) && "Todo non constant offests");
         offset = BvToIntExpr::create(offset);		
         errs() << "At offset: ";
@@ -3784,6 +3785,7 @@ bool Executor::getSymbolicSolution(const ExecutionState &state,
     const Array * arr = state.symbolics[i].second;
     if(arr->size == 0) { //String
         arr = arrayCache.getMostRecentStringArray(arr);
+        errs() << "!!!!! geting array " << arr->name << "\n";
     }
     objects.push_back(arr);
   }
@@ -3801,15 +3803,15 @@ bool Executor::getSymbolicSolution(const ExecutionState &state,
     if(state.symbolics[i].second->size > 0) { //Bitvector
       res.push_back(std::make_pair(state.symbolics[i].first->name, values[i]));
     } else { //String
-      errs() << "Working on " << mo->name << " size: " << mo->size << "\n";
+//      errs() << "Working on " << mo->name << " size: " << mo->size << "\n";
       std::vector<unsigned char> buf(mo->size);
       char numBuf[3];
       numBuf[2] = 0;
       int idx = 0;
       int numBufIdx = -1;
-      for(unsigned char &c : values[i]) 
-          errs() << c;
-      errs() << "\n";
+  //    for(unsigned char &c : values[i]) 
+  //        errs() << c;
+  //    errs() << "\n";
       for(unsigned char &c : values[i]) {
 //        printf("%c: idx: %d, numBufIdx: %d, numBuf: %s\n", c, idx, numBufIdx, numBuf);
         if(idx < (int)mo->size) buf[idx] = c;
@@ -3826,10 +3828,18 @@ bool Executor::getSymbolicSolution(const ExecutionState &state,
         if(idx > 0 && buf[idx-1] == '\\') {
             idx--;
             switch(c) {
+              case 'a': buf[idx] = '\a'; break;
+              case 'b': buf[idx] = '\b'; break;
+              case 'f': buf[idx] = '\f'; break;
               case 'n': buf[idx] = '\n'; break;
               case 'r': buf[idx] = '\r'; break;
-              case 'x': numBufIdx = 0; break;
+              case 't': buf[idx] = '\t'; break;
+              case 'v': buf[idx] = '\v'; break;
               case '\\': buf[idx] = '\\'; break;
+              case '\'': buf[idx] = '\''; break;
+              case '\"': buf[idx] = '\"'; break;
+              case '\?': buf[idx] = '\?'; break;
+              case 'x': numBufIdx = 0; break;
             }
         }
         if(numBufIdx == -1) {

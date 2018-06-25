@@ -13,6 +13,7 @@
 #include "TimingSolver.h"
 
 #include "klee/Expr.h"
+#include "klee/ExecutionState.h"
 #include "klee/TimerStatIncrementer.h"
 
 using namespace klee;
@@ -20,6 +21,7 @@ using namespace klee;
 ///
 
 void AddressSpace::bindObject(const MemoryObject *mo, ObjectState *os) {
+  assert(os != nullptr && "Binding null object");
   assert(os->copyOnWriteOwner==0 && "object already has owner");
   os->copyOnWriteOwner = cowKey;
   objects = objects.replace(std::make_pair(mo, os));
@@ -75,6 +77,7 @@ bool AddressSpace::resolveOne(ExecutionState &state,
                               ref<Expr> address,
                               ObjectPair &result,
                               bool &success) {
+//  state.dumpStack(llvm::errs());
   if (ConstantExpr *CE = dyn_cast<ConstantExpr>(address)) {
     success = resolveOne(CE, result);
     return true;

@@ -33,6 +33,9 @@ ExprVisitor::Action ExprEvaluator::evalRead(const UpdateList &ul,
   if (ul.root->isConstantArray() && index < ul.root->size)
     return Action::changeTo(ul.root->constantValues[index]);
 
+ // llvm::errs() << "Reading " << ul.root->name << "\n";
+ // getInitialValue(*ul.root, index)->dump();
+
   return Action::changeTo(getInitialValue(*ul.root, index));
 }
 
@@ -81,7 +84,7 @@ static void printVectorString(std::vector<unsigned char> &ret) {
 }
 #define MAX_SIZE 1024
 ExprVisitor::Action ExprEvaluator::visitStrVar(const StrVarExpr& se) {
-//   llvm::errs() << "looking at array name " << se.name << "\n";
+   //llvm::errs() << "looking at array name " << se.name << "\n";
    const Array *a = getStringArray(se.name);
    if(a == nullptr) {
        //llvm::errs() << "Skipping " << se.name << "\n";
@@ -101,6 +104,7 @@ ExprVisitor::Action ExprEvaluator::visitStrVar(const StrVarExpr& se) {
         ref<Expr> ch = getInitialValue(*a, getChrIdx);
         if(isa<NotOptimizedExpr>(ch)) break;
         c[idx] = (char)dyn_cast<ConstantExpr>(ch)->getZExtValue(8);
+//        llvm::errs() << c[idx];
 //        printf("%c: idx: %d, numBufIdx: %d, numBuf: %s\n", c[idx], idx, numBufIdx, numBuf);
 //        llvm::errs() << "str at: ";
 //        for(auto &h : c) llvm::errs() << (int)h << "-";
@@ -119,10 +123,18 @@ ExprVisitor::Action ExprEvaluator::visitStrVar(const StrVarExpr& se) {
         if(idx > 0 && c[idx-1] == '\\') {
             idx--;
             switch(c[idx+1]) {
+              case 'a': c[idx] = '\a'; break;
+              case 'b': c[idx] = '\b'; break;
+              case 'f': c[idx] = '\f'; break;
               case 'n': c[idx] = '\n'; break;
               case 'r': c[idx] = '\r'; break;
-              case 'x': numBufIdx = 0; break;
+              case 't': c[idx] = '\t'; break;
+              case 'v': c[idx] = '\v'; break;
               case '\\': c[idx] = '\\'; break;
+              case '\'': c[idx] = '\''; break;
+              case '\"': c[idx] = '\"'; break;
+              case '\?': c[idx] = '\?'; break;
+              case 'x': numBufIdx = 0; break;
             }
         }
 
@@ -136,9 +148,10 @@ ExprVisitor::Action ExprEvaluator::visitStrVar(const StrVarExpr& se) {
         //llvm::errs() << "\n";
         getChrIdx++;
    }
+ //  llvm::errs() << "END of raw string\n";
    std::vector<unsigned char> ret(c.begin(), c.begin() + idx );
-   //llvm::errs() << "Evaluated str var " << se.name << " to " ;//<< std::string(c.begin(), c.end()) << "\n";
-   //printVectorString(ret);
+//   llvm::errs() << "Evaluated str var " << se.name << " to " ;//<< std::string(c.begin(), c.end()) << "\n";
+//   printVectorString(ret);
    return Action::changeTo(StrConstExpr::alloc(ret));
 }
 
@@ -355,17 +368,17 @@ ExprVisitor::Action ExprEvaluator::visitFirstIndexOf(const StrFirstIdxOfExpr& sf
 
     auto firstIndex = std::search(haystack->data.begin(), haystack->data.end(),
                 needle.begin(), needle.end());
-//    llvm::errs() << "Haystack: ";
-//    printVectorString(haystack->data);
-//    llvm::errs() << "Needle: ";
-//    printVectorString(needle);
+ //   llvm::errs() << "Haystack: ";
+ //   printVectorString(haystack->data);
+ //   llvm::errs() << "Needle: ";
+ //   printVectorString(needle);
     size_t fstIdx = std::distance(haystack->data.begin(), firstIndex);
     if(firstIndex == haystack->data.end()) {
-//        llvm::errs() << "Character not found\n";
+        llvm::errs() << "Character not found\n";
         return Action::changeTo(ConstantExpr::create(-1, Expr::Int64));
     }
     assert(firstIndex != haystack->data.end()  && "Character must be present");
- //   llvm::errs() << "Needle found at offset = " << fstIdx << "\n";
+ //  llvm::errs() << "Needle found at offset = " << fstIdx << "\n";
     return Action::changeTo(ConstantExpr::create(fstIdx, Expr::Int64));
 }
 
@@ -388,18 +401,28 @@ ExprVisitor::Action ExprEvaluator::visitStrSubstr(const StrSubstrExpr &subStrE) 
     ref<Expr> _length = visit(subStrE.length);
     ConstantExpr* offset = dyn_cast<ConstantExpr>(_offset);
     ConstantExpr* length = dyn_cast<ConstantExpr>(_length);
+//    llvm::errs() << "In: ";
     if(offset != nullptr && length != nullptr) {
 //    llvm::errs() << "substr starting from: " << offset->getZExtValue() << " of len " << length->getZExtValue() << "\n";
       ref<Expr> _theString = visit(subStrE.s);
- //     _theString->dump();
+//      _theString->dump();
       StrConstExpr* theString = dyn_cast<StrConstExpr>(_theString);
       if(theString == nullptr) {
           llvm::errs() << "skiping substring\n";
+         subStrE.dump();
           return Action::skipChildren();
       }
       assert(theString != nullptr && "Non constant strign expr in SubString expr");
-      if(offset->Add(length)->getZExtValue() > theString->data.size()) 
+      if(offset->Add(length)->getZExtValue() > theString->data.size())  {
+          llvm::errs() << "Due to length " << theString->data.size()  << " smaller than " << offset->Add(length)->getZExtValue() << "\n";
+          subStrE.dump();
+          printVectorString(theString->data);
+          llvm::errs() << "Length:   ";
+          subStrE.length->dump();
+          llvm::errs() << "Offset:   ";
+          subStrE.offset->dump();
           return Action::skipChildren();
+      }
 //      llvm::errs() << "string size: " << theString->data.size() << "\n";
       std::vector<unsigned char> subStr(theString->data.begin() + offset->getZExtValue(),
                                         theString->data.begin() + offset->getZExtValue() + length->getZExtValue());
@@ -417,7 +440,7 @@ ExprVisitor::Action ExprEvaluator::visitCharAt(const StrCharAtExpr &charAtE) {
     if(index != nullptr) {
 //      llvm::errs() << "charat " << index->getZExtValue() << "\n";
       int idx = index->getZExtValue();
-      char c[2] = {0,0};
+      std::vector<unsigned char> c(1);
       ref<Expr> _string = visit(charAtE.s);
       StrConstExpr* str = dyn_cast<StrConstExpr>(_string);
       if(str == nullptr) return Action::skipChildren();
@@ -425,7 +448,7 @@ ExprVisitor::Action ExprEvaluator::visitCharAt(const StrCharAtExpr &charAtE) {
       if(idx >= str->data.size()) return Action::skipChildren();
       c[0] = str->data[idx]; 
 //    fprintf(stderr,"c is '%s'\n", c);
-      ref<Expr> ret = StrConstExpr::create(c);
+      ref<Expr> ret = StrConstExpr::alloc(c);
       return Action::changeTo(ret);
     } else {
       return Action::skipChildren();

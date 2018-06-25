@@ -208,12 +208,13 @@ bool QueryLoggingSolver::computeInitialValues(
         std::vector<unsigned char> &data = *values_it;
         logBuffer << queryCommentSign << "     " << array->name << " = [";
 
-        for (unsigned j = 0; j < array->size; j++) {
-          logBuffer << (int)data[j];
+        for (auto& c: data) {
+          if(array->size == 0 && isprint(c))
+              logBuffer << (char) c;
+          else
+              logBuffer << (int)c;
 
-          if (j + 1 < array->size) {
-            logBuffer << ",";
-          }
+           logBuffer << ",";
         }
         logBuffer << "]\n";
       }

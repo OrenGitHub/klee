@@ -636,8 +636,16 @@ Z3ASTHandle Z3Builder::constructActual(ref<Expr> e, int *width_out) {
   case Expr::Str_Const:
   {
   	StrConstExpr *sce = (StrConstExpr *) e.get();
+    std::stringstream ss;
+    for(auto &c : sce->data) {
+        if((int)c == 0) {
+          ss << "\\x00";
+        } else
+          ss << (char)c;
+    }
+//    llvm::errs() << "ss is " << ss.str();
 	  Z3ASTHandle result2 = Z3ASTHandle(
-		  Z3_mk_string(ctx,	(char*)sce->data.data()),
+		  Z3_mk_string(ctx,	ss.str().c_str()),
 		  ctx);
     *width_out = Expr::Int8;
 	  return result2;
@@ -1057,7 +1065,6 @@ Z3ASTHandle Z3Builder::constructActual(ref<Expr> e, int *width_out) {
   case Expr::Eq: {
     EqExpr *ee = cast<EqExpr>(e);
     Z3ASTHandle left = construct(ee->left, width_out);
-    int left_width = *width_out;
     Z3ASTHandle right = construct(ee->right, width_out);
     assert(ee->left->getType() == ee->right->getType() && "Sort of eq don't match");
    if (*width_out == 1) {

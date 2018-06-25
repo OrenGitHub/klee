@@ -5,12 +5,15 @@
 #include <getopt.h>
 #include <assert.h>
 
+#include "klee/klee.h"
+
 static int verbose_flag;
+void markString(char* c){}
 
 int
 main (int argc, char **argv)
 {
-  printf("argv %llu\n", (long long unsigned)argv);
+//  printf("argv %s\n", argv[1]);
   int aflag = 0;
   int bflag = 0;
   char *cvalue = NULL;
@@ -42,35 +45,41 @@ main (int argc, char **argv)
   char *short_opts = "";
   markString(short_opts);
   int option_index;
-  printf("argv %llu\n", (long long unsigned)argv);
+  printf("argv %s %d\n",argv[1], argc);
 
-  while ((c = getopt_long (argc, argv, short_opts, long_options, &option_index)) != -1)
+  while ((c = getopt_long (argc, argv, short_opts, long_options, &option_index)) != -1) {
+    printf("!!!!! C is %c\n",c);
     switch (c)
       {
       case 'a':
         aflag = 1;
+        printf("Set a flag \n");
         break;
       case 'b':
         bflag = 1;
+        printf("Set b flag \n");
         break;
       case 'c':
+        printf("Set c arg\n");
         cvalue = optarg;
         break;
       case '?':
-       return 1;
+        printf("Wrong flag!\n");
+        return 1;
       default:
-        abort ();
+        assert(0 && "Shouldn't happen");
       }
+  }
 
-  printf ("aflag = %d, bflag = %d, cvalue = %s\n",
-          aflag, bflag, cvalue);
+  printf ("aflag = %d, bflag = %d\n",
+          aflag, bflag);
 
   if(aflag == 1 && bflag == 1) {
       assert(0 && "GOAL!");
   }
 
-  for (index = optind; index < argc; index++)
-    printf ("Non-option argument %s\n", argv[index]);
+  //for (index = optind; index < argc; index++)
+  //  printf ("Non-option argument %s\n", argv[index]);
   return 0;
 }
 

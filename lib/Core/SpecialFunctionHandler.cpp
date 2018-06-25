@@ -718,6 +718,7 @@ void SpecialFunctionHandler::handleStrlen(
 	KInstruction *target,
 	std::vector<ref<Expr> > &arguments)
 {
+//  state.dumpStack(errs());
   assert(arguments.size() == 1 && "Strlen can only have 1 argument");
   StrModel m = stringModel.modelStrlen(
                       executor.resolveOne(state,arguments[0]).second, 
@@ -848,7 +849,7 @@ void SpecialFunctionHandler::handleStrncmp(
 	std::vector<ref<Expr> > &arguments)
 {
   assert(arguments.size() == 3 && "Strncmp takes 3 arguments!");
-  state.dumpStack(errs());
+  //state.dumpStack(errs());
   StrModel m = stringModel.modelStrncmp(
                       executor.resolveOne(state,arguments[0]).second, 
                       arguments[0],
@@ -859,10 +860,10 @@ void SpecialFunctionHandler::handleStrncmp(
   Executor::StatePair branches = executor.fork(state, m.second, true);
   ExecutionState *not_access_after_end = branches.first;
   ExecutionState *access_after_end = branches.second;
-  //if(access_after_end) {
-  //    executor.terminateStateOnError(*access_after_end, 
-  //        "n in strncmp is bigger than sizes", Executor::Ptr);
-  //}
+  if(access_after_end) {
+      executor.terminateStateOnError(*access_after_end, 
+          "n in strncmp is bigger than sizes", Executor::Ptr);
+  }
   executor.bindLocal(target,*not_access_after_end, m.first);
 }
 
@@ -871,6 +872,7 @@ void SpecialFunctionHandler::handleStrncpy(
 	KInstruction *target,
 	std::vector<ref<Expr> > &arguments)
 {
+  state.dumpStack(errs());
   assert(arguments.size() == 3 && "Strncpy takes 3 arguments!");
   StrModel m = stringModel.modelStrncpy(
                       executor.resolveOne(state,arguments[0]).second, 
@@ -895,6 +897,7 @@ void SpecialFunctionHandler::handleStrcmp(
 	KInstruction *target,
 	std::vector<ref<Expr> > &arguments)
 {
+  state.dumpStack(errs());
   assert(arguments.size() == 2 && "Strcmp takes 2 arguments!");
   StrModel m = stringModel.modelStrcmp(
                       executor.resolveOne(state,arguments[0]).second, 
@@ -981,20 +984,19 @@ void SpecialFunctionHandler::handleMarkString(
     errs() << "Creating " << ab_name << " at:\n:";
 //    state.dumpStack(errs());
     if(mo->isGlobal && isa<ConstantExpr>(wos->read8(0))) {
-        //const GlobalVariable* v = dynamic_cast<const GlobalVariable*>(mo->allocSite);
+        const GlobalVariable* v = dynamic_cast<const GlobalVariable*>(mo->allocSite);
+        v->dump();
         //assert(v && "Unsusported marks string of a non glbal variable global");
         //assert(v->isConstant() && "mark string of non constant global");
-        char c[wos->size + 1];
+        std::vector<unsigned char> c(wos->size);
         for(unsigned i = 0; i < wos->size; i++) {
-            errs() << "wos read " << wos->read8(i) << "\n";
-            wos->read8(i)->dump();
-            c[i] = (char)dyn_cast<ConstantExpr>(wos->read8(i))->getZExtValue(8);
+//            errs() << "wos read " << wos->read8(i) << "\n";
+//            wos->read8(i)->dump();
+            c[i] = dyn_cast<ConstantExpr>(wos->read8(i))->getZExtValue(8);
         }
-        std::stringstream ss;
-        ss << c << "\\x00";
-        errs() << "Marking constant " << mo->name << " " << ss.str() << " os size: " << wos->size << "\n";
+        errs() << "Marking constant " << mo->name << " " << std::string(c.begin(), c.end()) << " os size: " << wos->size << "\n";
 	      state.addConstraint(StrEqExpr::create(StrVarExpr::create(wos->getABSerial()), 
-                                                      StrConstExpr::create(ss.str())));
+                                                      StrConstExpr::alloc(c)));
     } else {
 
     errs() << "Creating an ab serial " << ab_name << " size " << mo->size << "\n";
