@@ -90,186 +90,494 @@ struct StaticAnalyzer : public LoopPass
 			return false;
 		}
 	}
+	bool BasicBlockBelongsToLoop(BasicBlock *BB, Loop *loop)
+	{
+		for (auto it = loop->block_begin(); it != loop->block_end(); it++)
+		{
+			if (BB == (*it))
+			{
+				return true;
+			}
+		}
+		return false;
+	}
 	
 	bool Is_Used_Outside_This_loop(Loop *loop, Value *v)
 	{
 		int n=0;
-		int numUses = v->getNumUses();
-		for (auto it = loop->block_begin(); it != loop->block_end(); it++)
+		for (auto use = v->use_begin(); use != v->use_end(); use++)
 		{
-			if (v->isUsedInBasicBlock(*it))
+			Instruction *i = (Instruction *) use->getUser();
+			if (BasicBlockBelongsToLoop(i->getParent(),loop))
 			{
 				n++;
 			}
 		}
-		if (n == numUses) return false;
-		else              return true;
+		assert(n <= v->getNumUses());
+		if (n < v->getNumUses())
+		{
+			errs() << v->getName().str();
+			errs() << " is used outside the loop\n";
+			return true;
+		}
+		return false;
 	}
 
-	bool MoreThanOneStringVar(Loop *loop)
+	void PrintLoopHeader(Loop *loop,std::ofstream &myfile)
 	{
-		static int serial=0;
-		std::string operand;
-		int numNonEscapingVars=0;
-		std::set<std::string> temps;
-		std::set<std::string> hooznikim;
-		std::ofstream myfile;
-		std::string filename = std::string("./LOOPS_SUMMARIES/LOOP_OUTPUT_")+std::to_string(serial++)+std::string(".txt");
-		myfile.open(filename);
-
-		myfile << ">> Summary loop for: ";
-		//myfile << (cast<DIScope>(loop->getStartLoc().getScope())->getFilename()).str();
+		/*************************************/
+		/* [1] Print parent function of loop */
+		/*************************************/
+		myfile << ">> Summary of loop inside function: ";
+		myfile << ((*(loop->block_begin()))->getParent())->getName().str();
 		myfile << ":";
-		//myfile << loop->getStartLoc().getLine();
-		myfile << "\n==========================================\n";
+		myfile << "\n===================================\n";
 
-		for (auto it = loop->block_begin(); it != loop->block_end(); it++)
+		/***************************************/
+		/* [2] Print a synthesized loop header */
+		/***************************************/
+		myfile << "\nBasic Block ( header )\n\n";
+		myfile << "    i0(int)    = 0(int)\n";
+		myfile << "    i (int)    = 0(int)\n";
+		myfile << "    s0(char *) = s.addr(char *)\n";
+	}
+
+	void PrintLoopFooter(Loop *loop,std::ofstream &myfile)
+	{
+		myfile << "\nBasic Block ( footer )\n\n";
+		myfile << "    s_final = s.addr\n";
+		myfile << "    i_final = i\n";
+	}
+
+	void PrintBasicBlockHeader(const std::string &name,std::ofstream &myfile)
+	{
+		myfile << "\nBasic Block ( ";
+		myfile << name;
+		myfile << " )\n\n";
+	}
+
+	void PrintLoopInductionVariableProgress(Loop *loop,std::ofstream &myfile)
+	{
+		//if (((*it)->getName().str()) == std::string("do.body"))
+		//{
+		//	myfile << "    i(int) = i(int) + 1(int)\n";
+		//}
+	}
+
+	void Print_Load(LoadInst *i,std::ofstream &myfile,std::map<std::string,std::string> &cache)
+	{
+		/****************************/
+		/* [1] Extract the dst name */
+		/****************************/
+		std::string dst = i->getName().str();
+
+		/********************************/
+		/* [2] Extract the operand name */
+		/********************************/
+		std::string operand = i->getPointerOperand()->getName().str();
+
+		/****************************************/
+		/* [3] Print formatted load instruction */
+		/****************************************/
+		if (i->getType()->isIntegerTy(8))
 		{
-			myfile << "\nBasic Block ( ";
-			myfile << (*it)->getName().str();
-			myfile << " )\n\n";
-			for (auto inst = (*it)->begin(); inst != (*it)->end(); inst++)
+			if ((temps.find(dst    ) == temps.end()) ||
+				(temps.find(operand) == temps.end()))
 			{
-				/*************************************/
-				/* [1] Insert temporary to temps set */
-				/*************************************/
-				std::string dst = inst->getName().str();
-				temps.insert(dst);
-				
-				/****************************************************/
-				/* [2] Inspect if any of the LLVM IR temporaries is */
-				/*     used oudside the loop.                       */
-				/****************************************************/
-				Is_Used_Outside_This_loop(loop,(Instruction *) inst);
-				
+				myfile << "    " ;
+				myfile <<   dst  ;
+				myfile <<  " = " ;
+				myfile <<  "[ "  ;
+				myfile << CacheName(operand,cache);
+				myfile <<  " ]"  ;
+				myfile <<  "\n"  ;
+			}
+			else
+			{
+				cache[dst] = std::string("[ ") + CacheName(operand,cache) + std::string(" ]");
+			}
+		}
+		else
+		{
+			//if (temps.find(dst) == temps.end())
+			//{
+				myfile << "    " ;
+				myfile <<  dst   ;
+				myfile << " = "  ;
+				myfile << CacheName(operand,cache);
+				myfile <<  "\n"  ;
+			//}
+
+			// cache[dst] = CacheName(operand,cache);
+		}
+	}
+
+	std::string CacheName(std::string &name,std::map<std::string,std::string> &cache)
+	{
+		std::string tmp = name;
+		while (cache[tmp] != "")
+		{
+			tmp = cache[tmp];
+		}
+		return tmp;
+	}
+
+	bool reg2mem(std::string &s)
+	{
+		return (s.find("reg2mem") != std::string::npos);
+	}
+
+	void Print_Store(StoreInst *i,std::ofstream &myfile,std::map<std::string,std::string> &cache)
+	{
+		/****************************/
+		/* [1] Extract the dst name */
+		/****************************/
+		auto ptrOperand = i->getPointerOperand();
+		std::string dst = ptrOperand->getName().str();
+
+		/********************************/
+		/* [2] Extract the operand name */
+		/********************************/
+		std::string operand = Value2String(i->getValueOperand());
+		
+		/******************************/
+		/* [3] Handle storing options */
+		/******************************/
+		if (temps.find(dst) == temps.end())
+		{
+			myfile << "    ";
+			myfile << dst;
+			myfile << " = ";
+			myfile << CacheName(operand,cache);
+			myfile << "\n";
+			cache[dst] = operand;
+		}
+		else
+		{
+			myfile << "    ";
+			myfile << "[ ";
+			myfile << dst;
+			myfile << " ]";
+			myfile << " = ";
+			myfile << CacheName(operand,cache);
+			myfile << "\n";				
+		}
+	}
+
+	void Print_Gep(GetElementPtrInst *i, std::ofstream &myfile,std::map<std::string,std::string> &cache)
+	{
+		/****************************/
+		/* [1] Extract the dst name */
+		/****************************/
+		std::string dst = i->getName().str();
+
+		/****************************/
+		/* [2] Extract the ptr name */
+		/****************************/
+		std::string ptr = i->getPointerOperand()->getName().str();
+
+		/**************************/
+		/* [3] Extract the offset */
+		/**************************/
+		std::string offsetStr = Value2String(i->getOperand(1));
+	
+		/***************************************/
+		/* [4] Print formatted Gep instruction */
+		/***************************************/
+		//myfile <<  "    "             ;
+		//myfile <<    dst              ;
+		//myfile <<   " = "             ;
+		//myfile << CacheName(ptr,cache);
+		//myfile <<   " + "             ;
+		//myfile << CacheName(offsetStr,cache);
+		//myfile <<   "\n"              ;
+		
+		cache[dst] = CacheName(ptr,cache) + std::string(" + ") + CacheName(offsetStr,cache);
+	}
+
+	void Print_Icmp(CmpInst *i,std::ofstream &myfile,std::map<std::string,std::string> &cache)
+	{
+		/****************************/
+		/* [1] Extract the dst name */
+		/****************************/
+		std::string dst = i->getName().str();
+
+		/*********************************/
+		/* [2] Extract the first operand */
+		/*********************************/
+		auto operand0 = i->getOperand(0);
+		std::string operand0Str = operand0->getName().str();
+
+		/**********************************/
+		/* [3] Extract the second operand */
+		/**********************************/
+		auto operand1 = i->getOperand(1);
+		std::string operand1Str;
+
+		/****************************/
+		/* [4] Extract the operator */
+		/****************************/
+		std::string op;
+		switch (i->getPredicate()) {
+		case (32): op = " == "; break;
+		case (33): op = " != "; break;
+		case (34): op = " > " ; break;
+		case (35): op = " >= "; break;
+		case (36): op = " < " ; break;
+		case (37): op = " <= "; break;
+		case (38): op = " > " ; break;
+		case (39): op = " >= "; break;
+		case (40): op = " < " ; break;
+		case (41): op = " <= "; break;
+		}
+		
+		/**********************************/
+		/* [5] Extract the second operand */
+		/**********************************/
+		operand1Str = Value2String(operand1);
+
+		/****************************************/
+		/* [6] Print formatted Icmp instruction */
+		/****************************************/
+		//myfile <<   "    "    ;
+		//myfile <<    dst      ;
+		//myfile <<   " = "     ;
+		//myfile <<    "( "     ;
+		//myfile << operand0Str ;
+		//myfile <<     op      ;
+		//myfile << operand1Str ;
+		//myfile <<   " )\n"    ;
+
+		/******************************/
+		/* [7] Cache Icmp instruction */
+		/******************************/
+		cache[dst] = CacheName(operand0Str,cache) + op + CacheName(operand1Str,cache);
+	}
+
+	void Print_Br(BranchInst *i,std::ofstream &myfile,std::map<std::string,std::string> &cache)
+	{
+		std::string bool_value = i->getOperand(0)->getName().str();
+		std::string first_label  = i->getSuccessor(0)->getName().str();
+		
+		if (i->isConditional())
+		{
+			std::string second_label = i->getSuccessor(1)->getName().str();
+			myfile << "    " << "if ( " << CacheName(bool_value,cache)	 << " )\n";
+			myfile << "    {\n";
+			myfile << "        goto " << first_label << "\n";
+			myfile << "    }\n";
+			myfile << "    " << "else\n";
+			myfile << "    {\n";
+			myfile << "        goto " << second_label << "\n";
+			myfile << "    }\n";
+		}
+		else
+		{
+			myfile << "    " << "goto " << first_label << "\n";
+		}
+	}
+
+	void Print_Sext(SExtInst *i,std::ofstream &myfile,std::map<std::string,std::string> &cache)
+	{
+		/****************************/
+		/* [1] Extract the dst name */
+		/****************************/
+		std::string dst = i->getName().str();
+
+		/********************************/
+		/* [2] Extract the operand name */
+		/********************************/
+		std::string operand = i->getOperand(0)->getName().str();
+
+		/****************************************/
+		/* [3] Print formatted Sext instruction */
+		/****************************************/
+		//myfile << "    " ;
+		//myfile <<   dst  ;
+		//myfile <<  " = " ;
+		//myfile << CacheName(operand,cache);
+		//myfile <<   "\n" ;
+
+		/******************************/
+		/* [4] Cache Sect instruction */
+		/******************************/
+		cache[dst] = CacheName(operand,cache);
+	}
+
+	std::string Value2String(Value *v)
+	{
+		if (ConstantInt* CI = dyn_cast<ConstantInt>(v))
+		{
+			return std::to_string(CI->getSExtValue());
+		}
+		else
+		{
+			return v->getName().str();
+		}
+	}
+
+	void Print_Add(BinaryOperator *i,std::ofstream &myfile,std::map<std::string,std::string> &cache)
+	{
+		/****************************/
+		/* [1] Extract the dst name */
+		/****************************/
+		std::string dst = i->getName().str();
+
+		/*********************************/
+		/* [2] Extract the operand names */
+		/*********************************/
+		std::string operand1 = Value2String(i->getOperand(0));
+		std::string operand2 = Value2String(i->getOperand(1));
+
+		/****************************************/
+		/* [3] Print formatted Sext instruction */
+		/****************************************/
+		myfile << "    "   ;
+		myfile << dst      ;
+		myfile << " = "    ;
+		myfile << CacheName(operand1,cache) ;
+		myfile << " + "    ;
+		myfile << CacheName(operand2,cache) ;
+		myfile << "\n"     ;
+	}
+	
+	void PrintInstruction(Instruction *i,std::ofstream &myfile,std::map<std::string,std::string> &cache)
+	{
+		/***************************/
+		/* [1] extract opcode name */
+		/***************************/
+		const char *opcode = i->getOpcodeName();
+		
+		/****************************************/
+		/* [2] switch-case on supported opcodes */
+		/****************************************/
+		if ( strncmp( opcode,"load",          4) == 0) Print_Load(  (LoadInst          *) i,myfile,cache );	
+		if ( strncmp( opcode,"store",         5) == 0) Print_Store( (StoreInst         *) i,myfile,cache );
+		if ( strncmp( opcode,"getelementptr",13) == 0) Print_Gep(   (GetElementPtrInst *) i,myfile,cache );	
+		if ( strncmp( opcode,"sext",          4) == 0) Print_Sext(  (SExtInst          *) i,myfile,cache );	
+		if ( strncmp( opcode,"icmp",          4) == 0) Print_Icmp(  (CmpInst           *) i,myfile,cache );	
+		if ( strncmp( opcode,"br",            2) == 0) Print_Br(    (BranchInst        *) i,myfile,cache );	
+		if ( strncmp( opcode,"add",           3) == 0) Print_Add(   (BinaryOperator    *) i,myfile,cache );	
+	}
+
+#if 0
 				/*************************************/
 				/* [3] Inspect arguments of commands */
 				/*************************************/
 				Instruction *i = (Instruction *) inst;
-				const char *opcode = i->getOpcodeName();
-				if (strncmp(opcode,"load",4) == 0)
+				std::string dst_type;
+				if (inst->getType()->isIntegerTy( 8))      { dst_type = "char"; }
+				else if (inst->getType()->isIntegerTy(32)) { dst_type = "int";  }
+				else if (inst->getType()->isIntegerTy( 1)) { dst_type = "bool"; }
+				else if (inst->getType()->isPointerTy())
 				{
-					operand = ((LoadInst *) i)->getPointerOperand()->getName().str();
-					if (temps.find(operand) == temps.end())
+					if (((PointerType *) (inst->getType()))->getElementType()->isIntegerTy(8))
 					{
-						hooznikim.insert(operand);
-						myfile << "    " << dst << " = ";
-						myfile << operand;
-						myfile << "\n";
+						dst_type = "char *";
 					}
-					else
+					if (((PointerType *) (inst->getType()))->getElementType()->isIntegerTy(32))
 					{
-						myfile << "    " << dst << " = ";
-						myfile << "[ ";
-						myfile << operand;
-						myfile << " ]";
-						myfile << "\n";
+						dst_type = "int *";
 					}
 				}
-				else if (strncmp(opcode,"store",4) == 0)
-				{
-					if (ConstantInt* CI = dyn_cast<ConstantInt>(((StoreInst *) i)->getValueOperand()))
-					{
-						myfile << "    " << "[ ";
-						myfile << ((StoreInst *) i)->getPointerOperand()->getName().str();
-						myfile << " ]";
-						myfile << " = ";
-						myfile << CI->getSExtValue();
-						myfile << "\n";
-					}
-					else
-					{
-						myfile << "    " << ((StoreInst *) i)->getPointerOperand()->getName().str();
-						myfile << " = ";
-						myfile << ((StoreInst *) i)->getValueOperand()->getName().str();
-						myfile << "\n";
-					}
-				}
-				else if (strncmp(opcode,"getelementptr",13) == 0)
-				{
-					myfile << "    " << dst << " = ";
-					myfile << ((GetElementPtrInst *) i)->getPointerOperand()->getName().str();
-					myfile << " + ";
-					if (ConstantInt* CI = dyn_cast<ConstantInt>(((GetElementPtrInst *) i)->getOperand(1)))
-					{
-						myfile << CI->getSExtValue();
-						myfile << "\n";
-					}
-					else
-					{
-						//myfile.close();
-						//return true;
-					}
-				}
-				else if (strncmp(opcode,"sext",4) == 0)
-				{
-					myfile << "    " << dst << " = ";
-					myfile << ((SExtInst *) i)->getOperand(0)->getName().str();
-					myfile << "\n";
-				}
-				else if (strncmp(opcode,"icmp",4) == 0)
-				{
-					myfile << "    " << dst << " = ";
-					myfile << "( ";
-					myfile << ((CmpInst *) i)->getOperand(0)->getName().str();
-					switch (((CmpInst *) i)->getPredicate()) {
-					case (32): myfile << " == "; break;
-					case (33): myfile << " != "; break;
-					case (34): myfile << " >  "; break;
-					case (35): myfile << " >= "; break;
-					case (36): myfile << " <  "; break;
-					case (37): myfile << " <= "; break;
-					case (38): myfile << " >  "; break;
-					case (39): myfile << " >= "; break;
-					case (40): myfile << " <  "; break;
-					case (41): myfile << " <= "; break;
-					}
-					if (ConstantInt* CI = dyn_cast<ConstantInt>(((CmpInst *) i)->getOperand(1)))
-					{
-						myfile << CI->getSExtValue();
-					}
-					else
-					{
-						//myfile.close();
-						//return true;
-					}
-					myfile << " )";
-					myfile << "\n";
-				}
-				else if (strncmp(opcode,"br",2) == 0)
-				{
-					if (((BranchInst *) i)->isConditional())
-					{
-						myfile << "    " << "if ( ";
-						myfile << ((BranchInst *) i)->getOperand(0)->getName().str();
-						myfile << " != 0) { goto ";
-						myfile << ((BranchInst *) i)->getSuccessor(0)->getName().str();
-						myfile << " }\n";
-						myfile << "    " << "if ( ";
-						myfile << ((BranchInst *) i)->getOperand(0)->getName().str();
-						myfile << " == 0) { goto ";
-						myfile << ((BranchInst *) i)->getSuccessor(1)->getName().str();
-						myfile << " }\n";
-					}
-					else
-					{
-						myfile << "    " << "goto ";
-						myfile << ((BranchInst *) i)->getSuccessor(0)->getName().str();						
-						myfile << "\n";
-					}
-				}
+				else                                       { dst_type = "other";}
+#endif
+
+	bool Analyze(Loop *loop)
+	{
+		static int intSerial=0;
+		std::string operand;
+		int numNonEscapingVars=0;
+		std::set<std::string> temps;
+		std::set<std::string> hooznikim;
+
+		/**********************************/
+		/* [0] Open file for loop summary */
+		/**********************************/
+		std::ofstream myfile;
+		std::string dir = "./LOOPS_SUMMARIES/LOOP_OUTPUT_";
+		std::string strSerial = std::to_string(intSerial++);
+		std::string filename = dir+strSerial+std::string(".txt");
+		myfile.open(filename);
+
+		/*************************/
+		/* [1] Print loop header */
+		/*************************/
+		PrintLoopHeader(loop,myfile);
+
+		/********************************************/
+		/* [2] Iterate over the loop's basic blocks */
+		/********************************************/
+		for (auto it = loop->block_begin(); it != loop->block_end(); it++)
+		{
+			/*****************************************/
+			/* [3] Use a cache for every basic block */
+			/*****************************************/
+			std::map<std::string,std::string> cache;
+
+			/******************************/
+			/* [4] Print Basic Block name */
+			/******************************/
+			PrintBasicBlockHeader((*it)->getName().str(),myfile);
+						
+			/****************************************************/
+			/* [5] Print synthesize loop induction variable i++ */
+			/****************************************************/
+			PrintLoopInductionVariableProgress(loop,myfile);
+			
+			/********************************************************/
+			/* [6] Iterate over the instructions of the basic block */
+			/********************************************************/
+			for (auto inst = (*it)->begin(); inst != (*it)->end(); inst++)
+			{				
+				/******************************************/
+				/* [7] Extract dst temporary to temps set */
+				/******************************************/
+				PrintInstruction((Instruction *) inst,myfile,cache);
 			}
 		}
+
+		/*************************/
+		/* [8] Print loop footer */
+		/*************************/
+		PrintLoopFooter(loop,myfile);
+
+		/*****************/
+		/* 9] Close file */
+		/*****************/
 		myfile.close();
+
+		/*******************/
+		/* [10] return ... */
+		/*******************/
 		return false;
+	}
+
+	std::set<std::string> temps;
+
+	void Identify_Loop_Temporaries(Loop *loop)
+	{
+		for (auto it = loop->block_begin(); it != loop->block_end(); it++)
+		{
+			for (auto inst = (*it)->begin(); inst != (*it)->end(); inst++)
+			{
+				temps.insert(inst->getName().str());
+			}
+		}
 	}
 
 	virtual bool runOnLoop(Loop *loop, LPPassManager &LPM)
 	{
-		/***************************************************/
-		/* [0] Print the function name containing the loop */
-		/***************************************************/
-		// PrintLoopLocation(loop);
+		temps.clear();
+		
+		/*********************************************/
+		/* [0] Identify string vars and integer vars */
+		/*********************************************/
+		Identify_Loop_Temporaries(loop);
+		for (auto temp : temps)
+		{
+			errs() << temp << "\n";
+		}
 
 		/**************************************************************/
 		/* [1] Handle only loops WITHOUT nested sub-loops inside them */
@@ -279,13 +587,16 @@ struct StaticAnalyzer : public LoopPass
 		/************************************************/
 		/* [2] Handle only loops WITHOUT outgoing edges */
 		/************************************************/
-		if (LoopFlowCanBreak(loop)) { errs() << "HAS OUT EDGES !!!\n"; return false; }
+		// if (LoopFlowCanBreak(loop)) { errs() << "HAS OUT EDGES !!!\n"; return false; }
 
 		/******************************************/
 		/* [3] Single string variable inside loop */
 		/******************************************/
-		if (MoreThanOneStringVar(loop)) return false;
+		Analyze(loop);
 
+		/****************************/
+		/* [4] Did the loop change? */
+		/****************************/
 		return false;
 	}
 };
