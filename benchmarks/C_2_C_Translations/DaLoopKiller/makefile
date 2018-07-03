@@ -23,12 +23,20 @@ PASS_SO_FILE = ./build/${PASS_DIR}/lib${PASS_NAME}.so
 ###################
 # BUILT-IN PASSES #
 ###################
-PASSES = -loop-simplify -instnamer -indvars
+PASSES =       \
+-loop-simplify \
+-instnamer     \
+-indvars       \
+-simplifycfg   \
+-view-cfg
+
+#PASSES = -loop-simplify -instnamer -indvars -reg2mem
 
 #########
 # INPUT #
 #########
 INPUT = ./examples/input
+#INPUT = ./examples/uniq
 
 ###########
 # TARGETS #
@@ -36,8 +44,9 @@ INPUT = ./examples/input
 .PHONY all:
 all:
 	cd build && make
-	rm -rf ./examples/*.bc
-	$(CLANG) -g -c -emit-llvm -o ${INPUT}.bc ${INPUT}.c
+	#rm -rf ./examples/*.bc
+	$(CLANG) -ggdb -O0 -c -emit-llvm -o ${INPUT}.bc ${INPUT}.c
+	$(CLANG) -O0 -c -emit-llvm -o ${INPUT}.bc ${INPUT}.c
 	$(OPT) ${PASSES} -o ${INPUT}.ready.bc ${INPUT}.bc
 	$(LLVM_DIS) -o ${INPUT}.ll ${INPUT}.ready.bc
 	$(OPT) -load ${PASS_SO_FILE} -${PASS_NAME} < ${INPUT}.ready.bc > /dev/null
