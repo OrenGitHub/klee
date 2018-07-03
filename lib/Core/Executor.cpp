@@ -648,6 +648,7 @@ void Executor::initializeGlobals(ExecutionState &state) {
     globalAddresses.insert(std::make_pair(&*i, evalConstant(i->getAliasee())));
   }
 
+static int numAbs = 10000;
   // once all objects are allocated, do the actual initialization
   for (Module::const_global_iterator i = m->global_begin(),
          e = m->global_end();
@@ -661,20 +662,22 @@ void Executor::initializeGlobals(ExecutionState &state) {
       
       initializeGlobalObject(state, wos, i->getInitializer(), 0);
       if(ConstantsAsABs && i->isConstant() 
+//         && i->hasPrivateLinkage()
          && i->getType()->getElementType()->isArrayTy()
          && dyn_cast<ArrayType>(i->getType()->getElementType())->getElementType()->isIntegerTy(8)) {
-         char c[wos->size + 1];
+         std::vector<unsigned char> c(wos->size + 1);
          for(unsigned i = 0; i < wos->size; i++) {
-             c[i] = (char)dyn_cast<ConstantExpr>(wos->read8(i))->getZExtValue(8);
+             c[i] = dyn_cast<ConstantExpr>(wos->read8(i))->getZExtValue(8);
          }
+         c[wos->size] = 0;
          mo->setName(i->getName());
-         wos->serial = 0;
+         wos->serial = numAbs++;
          wos->version = 0;
-         std::stringstream ss;
-         ss << c << "\\x00";
-         errs() << mo->name << " " << ss.str() << " os size: " << wos->size << "\n";
+     //    std::stringstream ss;
+     //    ss << c << "\\x00";
+     //    errs() << os->getABSerial() << " " << mo->name << " "  << ss.str() << " os size: " << wos->size << "\n";
 	       state.addConstraint(StrEqExpr::create(StrVarExpr::create(os->getABSerial()), 
-                                                      StrConstExpr::create(ss.str())));
+                                                      StrConstExpr::alloc(c)));
       }
       // if(i->isConstant()) os->setReadOnly(true);
     }
