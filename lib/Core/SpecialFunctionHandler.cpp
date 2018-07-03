@@ -741,9 +741,12 @@ void SpecialFunctionHandler::handleStrcpy(
 	KInstruction *target,
 	std::vector<ref<Expr> > &arguments)
 {
+  state.dumpStack(errs());
   assert(arguments.size() == 2 && "Strcpy takes 2 arguments!");
+  ObjectPair op = executor.resolveOne(state, arguments[0]);
+  ObjectState *wos = state.addressSpace.getWriteable(op.first, op.second);
   StrModel m = stringModel.modelStrcpy(
-                      executor.resolveOne(state,arguments[0]).second, 
+                      wos,
                       arguments[0],
                       executor.resolveOne(state,arguments[1]).second,
                       arguments[1]);
@@ -875,10 +878,12 @@ void SpecialFunctionHandler::handleStrncpy(
 {
   state.dumpStack(errs());
   assert(arguments.size() == 3 && "Strncpy takes 3 arguments!");
+  ObjectPair op = executor.resolveOne(state, arguments[0]);
+  ObjectState *wos = state.addressSpace.getWriteable(op.first, op.second);
   StrModel m = stringModel.modelStrncpy(
-                      executor.resolveOne(state,arguments[0]).second, 
+                      wos,
                       arguments[0],
-                      executor.resolveOne(state,arguments[1]).second,
+                      executor.resolveOne(state,arguments[1]).second, 
                       arguments[1],
 						arguments[2]);
 

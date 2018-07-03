@@ -69,9 +69,9 @@ public:
     	ref<Expr> n);
 		
     StrModel modelStrlen(const ObjectState* moS, ref<Expr>	s);
-    StrModel modelStrcpy(const ObjectState* moDst, ref<Expr> dst,
+    StrModel modelStrcpy(ObjectState* moDst, ref<Expr> dst,
                          const ObjectState* moSrc, ref<Expr> src);
-    StrModel modelStrncpy(const ObjectState* moDst, ref<Expr> dst,
+    StrModel modelStrncpy(ObjectState* moDst, ref<Expr> dst,
                          const ObjectState* moSrc, ref<Expr> src, ref<Expr> n);
 
  };

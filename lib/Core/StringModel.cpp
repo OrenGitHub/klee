@@ -462,8 +462,8 @@ StrModel StringModel::modelStrlen(const ObjectState* os, ref<Expr>	s) {
 	/*************************************/
   return std::make_pair(firstIdxOf_x00_in_s, p_is_NULL_terminated);
 }
-StrModel StringModel::modelStrncpy(const ObjectState* osDst, ref<Expr> dst,
-                     const ObjectState* osSrc, ref<Expr> src, ref<Expr> n) {
+StrModel StringModel::modelStrncpy(ObjectState* osDst, ref<Expr> dst,
+                                   const ObjectState* osSrc, ref<Expr> src, ref<Expr> n) {
 
   const MemoryObject* moDst = osDst->getObject();
   const MemoryObject* moSrc = osSrc->getObject();
@@ -499,7 +499,7 @@ StrModel StringModel::modelStrncpy(const ObjectState* osDst, ref<Expr> dst,
 	/***************************/
 	/* [9] New Dst Version ... */
 	/***************************/
-	const_cast<ObjectState*>(osDst)->version++;
+	osDst->version++;
 	ref<Expr> AB_dst_new_var = StrVarExpr::create(osDst->getABSerial());
 
 	/************************/
@@ -548,7 +548,7 @@ StrModel StringModel::modelStrncpy(const ObjectState* osDst, ref<Expr> dst,
 		SleExpr::create(n,src_size)));
 }
 
-StrModel StringModel::modelStrcpy(const ObjectState* osDst, ref<Expr> dst,
+StrModel StringModel::modelStrcpy(ObjectState* osDst, ref<Expr> dst,
                      const ObjectState* osSrc, ref<Expr> src) {
   
   const MemoryObject* moDst = osDst->getObject();
@@ -580,7 +580,7 @@ StrModel StringModel::modelStrcpy(const ObjectState* osDst, ref<Expr> dst,
 	/***************************/
 	/* [9] New Dst Version ... */
 	/***************************/
-	const_cast<ObjectState*>(osDst)->version++;
+	osDst->version++;
 	ref<Expr> AB_dst_new_var = StrVarExpr::create(osDst->getABSerial());
 
 	/************************/

@@ -3315,8 +3315,9 @@ void Executor::executeMemoryOperation(ExecutionState &state,
     const MemoryObject *mo = op.first;
     const ObjectState *os = op.second;
     if(isWrite && type == 8 && (os->serial >= 0)) {
+        ObjectState* wos = state.addressSpace.getWriteable(mo,os);
         ref<Expr> offset = mo->getOffsetExpr(address);
-        errs() << "Modifying mo serial " << os->serial << " version " << os->version << " with ";
+        errs() << "Modifying mo serial " << os->serial << " version " << os->version << " in stata  " << &state << "\n";
        // errs() << (char)dyn_cast<ConstantExpr>(value)->getZExtValue() << "\n";
         errs() << "At offset: ";
 //        offset->dump();
@@ -3329,8 +3330,8 @@ void Executor::executeMemoryOperation(ExecutionState &state,
         ref<Expr> suffixStart  = AddExpr::create(prefixLength,one);
         ref<Expr> suffixLength = SubExpr::create(mo->getSizeExpr(),suffixStart);
         ref<Expr> AB_p_var     = StrVarExpr::create(os->getABSerial());
-        const_cast<ObjectState*>(os)->version++;
-        ref<Expr> AB_p_new_var = StrVarExpr::create(os->getABSerial());
+        wos->version++;
+        ref<Expr> AB_p_new_var = StrVarExpr::create(wos->getABSerial());
 
  	    state.addConstraint(EqExpr::create(
   		  StrLengthExpr::create(AB_p_new_var),
@@ -3360,7 +3361,7 @@ void Executor::executeMemoryOperation(ExecutionState &state,
         /*******************************/
         /* [12] Extract Version Number */
         /*******************************/
-        int version=const_cast<ObjectState*>(os)->version;
+        int version=wos->version;
 
         /************************/
         /* [12] Add constraints */
@@ -3781,7 +3782,7 @@ bool Executor::getSymbolicSolution(const ExecutionState &state,
   std::vector< std::vector<unsigned char> > values;
   std::vector<const Array*> objects;
   for (unsigned i = 0; i != state.symbolics.size(); ++i) {
-    const MemoryObject* mo = state.symbolics[i].first;
+//    const MemoryObject* mo = state.symbolics[i].first;
     const Array * arr = state.symbolics[i].second;
     if(arr->size == 0) { //String
         arr = arrayCache.getMostRecentStringArray(arr);
