@@ -665,11 +665,10 @@ static int numAbs = 10000;
 //         && i->hasPrivateLinkage()
          && i->getType()->getElementType()->isArrayTy()
          && dyn_cast<ArrayType>(i->getType()->getElementType())->getElementType()->isIntegerTy(8)) {
-         std::vector<unsigned char> c(wos->size + 1);
+         std::vector<unsigned char> c(wos->size);
          for(unsigned i = 0; i < wos->size; i++) {
              c[i] = dyn_cast<ConstantExpr>(wos->read8(i))->getZExtValue(8);
          }
-         c[wos->size] = 0;
          mo->setName(i->getName());
          wos->serial = numAbs++;
          wos->version = 0;
@@ -3369,8 +3368,8 @@ void Executor::executeMemoryOperation(ExecutionState &state,
         /************************/
         /* [12] Add constraints */
         /************************/
-        if (version > 1) { state.addConstraint(prefixEq); }
-        if (version > 1) { state.addConstraint(suffixEq); }
+        if (version > 0) { state.addConstraint(prefixEq); }
+        if (version > 0) { state.addConstraint(suffixEq); }
         state.addConstraint(middleEq);
         return;
 	
