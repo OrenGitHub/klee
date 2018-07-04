@@ -665,11 +665,10 @@ static int numAbs = 10000;
 //         && i->hasPrivateLinkage()
          && i->getType()->getElementType()->isArrayTy()
          && dyn_cast<ArrayType>(i->getType()->getElementType())->getElementType()->isIntegerTy(8)) {
-         std::vector<unsigned char> c(wos->size + 1);
+         std::vector<unsigned char> c(wos->size);
          for(unsigned i = 0; i < wos->size; i++) {
              c[i] = dyn_cast<ConstantExpr>(wos->read8(i))->getZExtValue(8);
          }
-         c[wos->size] = 0;
          mo->setName(i->getName());
          wos->serial = numAbs++;
          wos->version = 0;
@@ -3369,8 +3368,8 @@ void Executor::executeMemoryOperation(ExecutionState &state,
         /************************/
         /* [12] Add constraints */
         /************************/
-        if (version > 1) { state.addConstraint(prefixEq); }
-        if (version > 1) { state.addConstraint(suffixEq); }
+        if (version > 0) { state.addConstraint(prefixEq); }
+        if (version > 0) { state.addConstraint(suffixEq); }
         state.addConstraint(middleEq);
         return;
 	
@@ -3808,48 +3807,35 @@ bool Executor::getSymbolicSolution(const ExecutionState &state,
       res.push_back(std::make_pair(state.symbolics[i].first->name, values[i]));
     } else { //String
 //      errs() << "Working on " << mo->name << " size: " << mo->size << "\n";
-      std::vector<unsigned char> buf(mo->size);
+      std::vector<unsigned char> buf;
       char numBuf[3];
-      numBuf[2] = 0;
-      int idx = 0;
-      int numBufIdx = -1;
-  //    for(unsigned char &c : values[i]) 
-  //        errs() << c;
-  //    errs() << "\n";
-      for(unsigned char &c : values[i]) {
-//        printf("%c: idx: %d, numBufIdx: %d, numBuf: %s\n", c, idx, numBufIdx, numBuf);
-        if(idx < (int)mo->size) buf[idx] = c;
-        if(numBufIdx >= 0) {
-            numBuf[numBufIdx] = c;
-            numBufIdx++;
-        }
-
-        if(numBufIdx == 2) {
-            numBufIdx = -1;
-            buf[idx] = (unsigned char)strtol(numBuf,NULL, 16);
-        }
-
-        if(idx > 0 && buf[idx-1] == '\\') {
-            idx--;
-            switch(c) {
-              case 'a': buf[idx] = '\a'; break;
-              case 'b': buf[idx] = '\b'; break;
-              case 'f': buf[idx] = '\f'; break;
-              case 'n': buf[idx] = '\n'; break;
-              case 'r': buf[idx] = '\r'; break;
-              case 't': buf[idx] = '\t'; break;
-              case 'v': buf[idx] = '\v'; break;
-              case '\\': buf[idx] = '\\'; break;
-              case '\'': buf[idx] = '\''; break;
-              case '\"': buf[idx] = '\"'; break;
-              case '\?': buf[idx] = '\?'; break;
-              case 'x': numBufIdx = 0; break;
+      for(int j = 0; j < values[i].size(); j++) {
+       if(values[i][j] == '\\') {
+           j++;
+            switch(values[i][j]) {
+              case 'a':  buf.push_back('\a'); break;
+              case 'b':  buf.push_back('\b'); break;
+              case 'f':  buf.push_back('\f'); break;
+              case 'n':  buf.push_back('\n'); break;
+              case 'r':  buf.push_back('\r'); break;
+              case 't':  buf.push_back('\t'); break;
+              case 'v':  buf.push_back('\v'); break;
+              case '\\': buf.push_back('\\'); break;
+              case '\'': buf.push_back('\''); break;
+              case '\"': buf.push_back('\"'); break;
+              case '\?': buf.push_back('\?'); break;
+              case 'x': 
+                  numBuf[0] = values[i][j+1];
+                  numBuf[1] = values[i][j+2]; 
+                  buf.push_back((unsigned char)strtol(numBuf,NULL, 16)); 
+                  j = j + 2;
+                  break;
+              default: assert(0 && "Unhandled escape");
             }
-        }
-        if(numBufIdx == -1) {
-            idx++;
-        }
+       } else 
+        buf.push_back(values[i][j]);
       }
+ 
       res.push_back(std::make_pair(state.symbolics[i].first->name, buf));
         
     }
