@@ -164,6 +164,54 @@ struct StaticAnalyzer : public LoopPass
 		//}
 	}
 
+	void ScanVars(Value *v)
+	{
+		errs() << "scanning: " << v->getName().str() << "\n";
+		if (temps.find(v->getName().str()) == temps.end())
+		{
+			if (v->getType()->isIntegerTy(8))
+			{
+				external_cvars.insert(v->getName().str());
+			}
+			else if (v->getType()->isIntegerTy(32))
+			{
+				external_ivars.insert(v->getName().str());
+			}
+			else if (v->getType()->isIntegerTy(64))
+			{
+				external_ivars.insert(v->getName().str());
+			}
+			else if (v->getType()->isPointerTy())
+			{
+				PointerType *p1 = (PointerType *) v->getType();
+				if (p1->getElementType()->isPointerTy())
+				{
+					PointerType *p2 = (PointerType *) p1->getElementType();
+					if (p2->getElementType()->isIntegerTy(8))
+					{
+						external_svars.insert(v->getName().str());
+					}
+				}
+				else if (p1->getElementType()->isIntegerTy(8))
+				{
+					external_cvars.insert(v->getName().str());
+				}
+				else if (p1->getElementType()->isIntegerTy(32))
+				{
+					external_ivars.insert(v->getName().str());
+				}
+				else
+				{
+					assert(0 && "ptr to something weird");
+				}
+			}
+			else
+			{
+				assert(0 && "unsupported external var");			
+			}
+		}
+	}
+
 	void Print_Load(LoadInst *i,std::ofstream &myfile,std::map<std::string,std::string> &cache)
 	{
 		/****************************/
@@ -175,40 +223,29 @@ struct StaticAnalyzer : public LoopPass
 		/* [2] Extract the operand name */
 		/********************************/
 		std::string operand = i->getPointerOperand()->getName().str();
+		ScanVars(i->getPointerOperand());
 
 		/****************************************/
 		/* [3] Print formatted load instruction */
 		/****************************************/
 		if (i->getType()->isIntegerTy(8))
 		{
-			if ((temps.find(dst    ) == temps.end()) ||
-				(temps.find(operand) == temps.end()))
-			{
-				myfile << "    " ;
-				myfile <<   dst  ;
-				myfile <<  " = " ;
-				myfile <<  "[ "  ;
-				myfile << CacheName(operand,cache);
-				myfile <<  " ]"  ;
-				myfile <<  "\n"  ;
-			}
-			else
-			{
-				cache[dst] = std::string("[ ") + CacheName(operand,cache) + std::string(" ]");
-			}
+			myfile << "    " ;
+			myfile <<   dst  ;
+			myfile <<  " = " ;
+			myfile <<  "[ "  ;
+			myfile << operand;
+			myfile <<  " ]"  ;
+			myfile <<  "\n"  ;
+			cache[dst] = std::string("[ ") + operand + std::string(" ]");
 		}
 		else
 		{
-			//if (temps.find(dst) == temps.end())
-			//{
-				myfile << "    " ;
-				myfile <<  dst   ;
-				myfile << " = "  ;
-				myfile << CacheName(operand,cache);
-				myfile <<  "\n"  ;
-			//}
-
-			// cache[dst] = CacheName(operand,cache);
+			myfile << "    " ;
+			myfile <<  dst   ;
+			myfile << " = "  ;
+			myfile << operand;
+			myfile <<  "\n"  ;
 		}
 	}
 
@@ -239,6 +276,8 @@ struct StaticAnalyzer : public LoopPass
 		/* [2] Extract the operand name */
 		/********************************/
 		std::string operand = Value2String(i->getValueOperand());
+		ScanVars(i->getPointerOperand());
+		// ScanVars(i->getValueOperand());
 		
 		/******************************/
 		/* [3] Handle storing options */
@@ -248,7 +287,7 @@ struct StaticAnalyzer : public LoopPass
 			myfile << "    ";
 			myfile << dst;
 			myfile << " = ";
-			myfile << CacheName(operand,cache);
+			myfile << operand;
 			myfile << "\n";
 			cache[dst] = operand;
 		}
@@ -259,7 +298,7 @@ struct StaticAnalyzer : public LoopPass
 			myfile << dst;
 			myfile << " ]";
 			myfile << " = ";
-			myfile << CacheName(operand,cache);
+			myfile << operand;
 			myfile << "\n";				
 		}
 	}
@@ -284,13 +323,13 @@ struct StaticAnalyzer : public LoopPass
 		/***************************************/
 		/* [4] Print formatted Gep instruction */
 		/***************************************/
-		//myfile <<  "    "             ;
-		//myfile <<    dst              ;
-		//myfile <<   " = "             ;
-		//myfile << CacheName(ptr,cache);
-		//myfile <<   " + "             ;
-		//myfile << CacheName(offsetStr,cache);
-		//myfile <<   "\n"              ;
+		myfile <<  "    "   ;
+		myfile <<    dst    ;
+		myfile <<   " = "   ;
+		myfile <<    ptr    ;
+		myfile <<   " + "   ;
+		myfile << offsetStr ;
+		myfile <<   "\n"    ;
 		
 		cache[dst] = CacheName(ptr,cache) + std::string(" + ") + CacheName(offsetStr,cache);
 	}
@@ -483,7 +522,7 @@ struct StaticAnalyzer : public LoopPass
 				else                                       { dst_type = "other";}
 #endif
 
-	bool Analyze(Loop *loop)
+	bool Init(Loop *loop)
 	{
 		static int intSerial=0;
 		std::string operand;
@@ -555,6 +594,14 @@ struct StaticAnalyzer : public LoopPass
 
 	std::set<std::string> temps;
 
+	std::set<std::string> internal_svars;
+	std::set<std::string> internal_ivars;
+	std::set<std::string> internal_cvars;
+
+	std::set<std::string> external_svars;
+	std::set<std::string> external_ivars;
+	std::set<std::string> external_cvars;
+
 	void Identify_Loop_Temporaries(Loop *loop)
 	{
 		for (auto it = loop->block_begin(); it != loop->block_end(); it++)
@@ -564,6 +611,12 @@ struct StaticAnalyzer : public LoopPass
 				temps.insert(inst->getName().str());
 			}
 		}
+
+		for (auto temp : temps)
+		{
+			errs() << temp << "\n";
+		}
+
 	}
 
 	virtual bool runOnLoop(Loop *loop, LPPassManager &LPM)
@@ -574,10 +627,6 @@ struct StaticAnalyzer : public LoopPass
 		/* [0] Identify string vars and integer vars */
 		/*********************************************/
 		Identify_Loop_Temporaries(loop);
-		for (auto temp : temps)
-		{
-			errs() << temp << "\n";
-		}
 
 		/**************************************************************/
 		/* [1] Handle only loops WITHOUT nested sub-loops inside them */
@@ -592,7 +641,17 @@ struct StaticAnalyzer : public LoopPass
 		/******************************************/
 		/* [3] Single string variable inside loop */
 		/******************************************/
-		Analyze(loop);
+		Init(loop);
+
+		/*************************************/
+		/* [5] Print participating variables */
+		/*************************************/
+		errs() << "external svars:\n"; for (auto external_svar : external_svars) { errs() << external_svar << "\n"; }
+		errs() << "external ivars:\n"; for (auto external_ivar : external_ivars) { errs() << external_ivar << "\n"; }
+		errs() << "external cvars:\n"; for (auto external_cvar : external_cvars) { errs() << external_cvar << "\n"; }
+		errs() << "internal svars:\n"; for (auto internal_svar : internal_svars) { errs() << internal_svar << "\n"; }
+		errs() << "internal ivars:\n"; for (auto internal_ivar : internal_ivars) { errs() << internal_ivar << "\n"; }
+		errs() << "internal cvars:\n"; for (auto internal_cvar : internal_cvars) { errs() << internal_cvar << "\n"; }
 
 		/****************************/
 		/* [4] Did the loop change? */
