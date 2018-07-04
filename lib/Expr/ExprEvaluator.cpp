@@ -72,7 +72,7 @@ ExprVisitor::Action ExprEvaluator::visitStrFromBv8(const StrFromBitVector8Expr& 
   ref<Expr> _c = visit(e.someBitVec8);
   ConstantExpr *c = dyn_cast<ConstantExpr>(_c);
   assert(c && "non constant bv in strfrobv8");
-  std::vector<unsigned char> arr{ (char)c->getZExtValue(8) };
+  std::vector<unsigned char> arr{ (unsigned char)c->getZExtValue(8) };
   return Action::changeTo(StrConstExpr::alloc(arr));
 }
 
@@ -82,76 +82,54 @@ static void printVectorString(std::vector<unsigned char> &ret) {
    //for(auto &h : ret) llvm::errs() << h << "-";
    llvm::errs() << "\n";
 }
-#define MAX_SIZE 1024
 ExprVisitor::Action ExprEvaluator::visitStrVar(const StrVarExpr& se) {
    //llvm::errs() << "looking at array name " << se.name << "\n";
    const Array *a = getStringArray(se.name);
    if(a == nullptr) {
-       //llvm::errs() << "Skipping " << se.name << "\n";
+//       llvm::errs() << "array: " << se.name << " not found!\n";
        return Action::skipChildren();
    }
 //   llvm:: errs() << "array name " << a->name << "\n";
    assert(a && "nullptr array from ab name");
-   std::vector<unsigned char> c(MAX_SIZE);
-
-   char numBuf[3] = {0};
-   numBuf[2] = 0;
-   int idx = 0;
-   int numBufIdx = -1; 
+   std::vector<unsigned char> c;
    int getChrIdx = 0;
-   while(idx < MAX_SIZE) { //not null terminated
-        //llvm::errs() << a <<  a->name <<  " In loop\n";
+   while(1) {
         ref<Expr> ch = getInitialValue(*a, getChrIdx);
         if(isa<NotOptimizedExpr>(ch)) break;
-        c[idx] = (char)dyn_cast<ConstantExpr>(ch)->getZExtValue(8);
-//        llvm::errs() << c[idx];
-//        printf("%c: idx: %d, numBufIdx: %d, numBuf: %s\n", c[idx], idx, numBufIdx, numBuf);
-//        llvm::errs() << "str at: ";
-//        for(auto &h : c) llvm::errs() << (int)h << "-";
-//        llvm::errs() << "\n";
-//        llvm::errs() << " as string "<< std::string(c.begin(), c.end()) << "\n";
-        if(numBufIdx >= 0) {
-            numBuf[numBufIdx] = c[idx];
-            numBufIdx++;
-        }
-
-        if(numBufIdx == 2) {
-            numBufIdx = -1;
-            c[idx] = (unsigned char)strtol(numBuf,NULL, 16);
-        }
-
-        if(idx > 0 && c[idx-1] == '\\') {
-            idx--;
-            switch(c[idx+1]) {
-              case 'a': c[idx] = '\a'; break;
-              case 'b': c[idx] = '\b'; break;
-              case 'f': c[idx] = '\f'; break;
-              case 'n': c[idx] = '\n'; break;
-              case 'r': c[idx] = '\r'; break;
-              case 't': c[idx] = '\t'; break;
-              case 'v': c[idx] = '\v'; break;
-              case '\\': c[idx] = '\\'; break;
-              case '\'': c[idx] = '\''; break;
-              case '\"': c[idx] = '\"'; break;
-              case '\?': c[idx] = '\?'; break;
-              case 'x': numBufIdx = 0; break;
-            }
-        }
-
-        //printf("%c: idx: %d, numBufIdx: %d, numBuf: %s\n", c[idx], idx, numBufIdx, numBuf);
-        //llvm::errs() << "str at: ";// << std::string(c.begin(), c.end()) << "\n";
-        //for(auto &h : c) llvm::errs() << h << "-";
-        //llvm::errs() << "\n";
-        if(numBufIdx == -1) {
-            idx++;
-        }
-        //llvm::errs() << "\n";
+        c.push_back((unsigned char)dyn_cast<ConstantExpr>(ch)->getZExtValue(8));
         getChrIdx++;
    }
- //  llvm::errs() << "END of raw string\n";
-   std::vector<unsigned char> ret(c.begin(), c.begin() + idx );
-//   llvm::errs() << "Evaluated str var " << se.name << " to " ;//<< std::string(c.begin(), c.end()) << "\n";
-//   printVectorString(ret);
+   std::vector<unsigned char> ret;
+   char numBuf[3] = {0,0,0};
+
+   for(int i = 0; i < c.size(); i++) {
+       if(c[i] == '\\') {
+           i++;
+            switch(c[i]) {
+              case 'a':  ret.push_back('\a'); break;
+              case 'b':  ret.push_back('\b'); break;
+              case 'f':  ret.push_back('\f'); break;
+              case 'n':  ret.push_back('\n'); break;
+              case 'r':  ret.push_back('\r'); break;
+              case 't':  ret.push_back('\t'); break;
+              case 'v':  ret.push_back('\v'); break;
+              case '\\': ret.push_back('\\'); break;
+              case '\'': ret.push_back('\''); break;
+              case '\"': ret.push_back('\"'); break;
+              case '\?': ret.push_back('\?'); break;
+              case 'x': 
+                  numBuf[0] = c[i+1];
+                  numBuf[1] = c[i+2]; 
+                  ret.push_back((unsigned char)strtol(numBuf,NULL, 16)); 
+                  i = i + 2;
+                  break;
+              default: assert(0 && "Unhandled escape");
+            }
+       } else 
+        ret.push_back(c[i]);
+   }
+   llvm::errs() << "Evaluated str var " << se.name << " to " ;//<< std::string(c.begin(), c.end()) << "\n";
+   printVectorString(ret);
    return Action::changeTo(StrConstExpr::alloc(ret));
 }
 

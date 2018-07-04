@@ -640,6 +640,8 @@ Z3ASTHandle Z3Builder::constructActual(ref<Expr> e, int *width_out) {
     for(auto &c : sce->data) {
         if((int)c == 0) {
           ss << "\\x00";
+        } else if (c == '\\') {
+          ss << "\\x5c";
         } else
           ss << (char)c;
     }
