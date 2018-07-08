@@ -133,6 +133,10 @@ namespace klee {
     HANDLER(handleBREAKPOINT);
     HANDLER(handle_da_loop_killer_f1);
     HANDLER(handle_da_loop_killer_f2);
+    HANDLER(handle_da_loop_killer_f3);
+    HANDLER(handle_da_loop_killer_f4);
+    HANDLER(handle_da_loop_killer_f5);
+    HANDLER(handle_da_loop_killer_f6);
     //HANDLER(handle_da_loop_killer_f1);
     //HANDLER(handle_da_loop_killer_f1);
     //HANDLER(handle_da_loop_killer_f1);
