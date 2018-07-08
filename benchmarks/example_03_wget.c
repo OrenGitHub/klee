@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <assert.h>
 
 #define ISDIGIT(x) (('0' <= x) && (x <= '9'))
 
@@ -16,11 +17,20 @@ int skip_lws (const char *string)
 {
 	const char *p = string;
 
-	while (*p == ' ' || *p == '\t' || *p == '\r' || *p == '\n')
-	{
-		++p;
-	}
+	//while (*p == ' ' || *p == '\t' || *p == '\r' || *p == '\n')
+	//{
+	//	++p;
+	//}
+	p = f5(p);
 	return p - string;
+}
+
+char *myStrdup(char *src)
+{
+	char *dst = malloc( strlen( src ) + 1);
+	markString(dst);
+	strcpy(dst, src);
+	return dst;
 }
 
 
@@ -32,59 +42,83 @@ int skip_lws (const char *string)
    malformed.  The pointer to reason-phrase is returned in RP.  */
 static int parse_http_status_line (const char *line, const char **reason_phrase_ptr)
 {
-  /* (the variables must not be named `major' and `minor', because
-     that breaks compilation with SunOS4 cc.)  */
-  int mjr, mnr, statcode;
-  const char *p;
+	/* (the variables must not be named `major' and `minor', because
+	that breaks compilation with SunOS4 cc.)  */
+	int mjr;
+	int mnr;
+	int statcode;
+	const char *p;
 
-  *reason_phrase_ptr = NULL;
+	*reason_phrase_ptr = NULL;
 
-  /* The standard format of HTTP-Version is: `HTTP/X.Y', where X is
-     major version, and Y is minor version.  */
-  if (strncmp (line, "HTTP/", 5) != 0)
-    return -1;
-  line += 5;
+	/* The standard format of HTTP-Version is: `HTTP/X.Y', where X is
+	major version, and Y is minor version.  */
+	if (myStrncmp (line, "HTTP/", 5) != 0)
+		return -1;
+	line += 5;
 
-  /* Calculate major HTTP version.  */
-  p = line;
-  for (mjr = 0; ISDIGIT (*line); line++)
-    mjr = 10 * mjr + (*line - '0');
-  if (*line != '.' || p == line)
-    return -1;
-  ++line;
+	/* Calculate major HTTP version.  */
+	p = line;
+	for (mjr = 0; ISDIGIT (*line); line++)
+	{
+		mjr = 10 * mjr + (*line - '0');
+	}
+	if (*line != '.' || p == line)
+	{
+		return -1;
+	}
 
-  /* Calculate minor HTTP version.  */
-  p = line;
-  for (mnr = 0; ISDIGIT (*line); line++)
-    mnr = 10 * mnr + (*line - '0');
-  if (*line != ' ' || p == line)
-    return -1;
-  /* Wget will accept only 1.0 and higher HTTP-versions.  The value of
-     minor version can be safely ignored.  */
-  if (mjr < 1)
-    return -1;
-  ++line;
+	++line;
 
-  /* Calculate status code.  */
-  if (!(ISDIGIT (*line) && ISDIGIT (line[1]) && ISDIGIT (line[2])))
-    return -1;
-  statcode = 100 * (*line - '0') + 10 * (line[1] - '0') + (line[2] - '0');
+	/* Calculate minor HTTP version.  */
+	p = line;
+	//for (mnr = 0; ISDIGIT (*line); line++)
+	//{
+	//	mnr = 10 * mnr + (*line - '0');
+	//}
+	line = f6(line);
+	if (*line != ' ' || p == line)
+	{
+		return -1;
+	}
+	/* Wget will accept only 1.0 and higher HTTP-versions.  The value of
+	minor version can be safely ignored.  */
+	if (mjr < 1)
+	{
+		return -1;
+	}
 
-  /* Set up the reason phrase pointer.  */
-  line += 3;
-  /* RFC2068 requires SPC here, but we allow the string to finish
-     here, in case no reason-phrase is present.  */
-  if (*line != ' ')
-    {
-      if (!*line)
-	*reason_phrase_ptr = line;
-      else
-	return -1;
+	++line;
+
+	/* Calculate status code.  */
+	if (!(ISDIGIT (*line) && ISDIGIT (line[1]) && ISDIGIT (line[2])))
+	{
+		return -1;
+	}
+	
+	statcode = 100 * (*line - '0') + 10 * (line[1] - '0') + (line[2] - '0');
+
+	/* Set up the reason phrase pointer.  */
+	line += 3;
+	/* RFC2068 requires SPC here, but we allow the string to finish
+	here, in case no reason-phrase is present.  */
+	if (*line != ' ')
+	{
+		if (!*line)
+		{
+			*reason_phrase_ptr = line;
+		}
+		else
+		{
+			return -1;
+		}
     }
-  else
-    *reason_phrase_ptr = line + 1;
+	else
+	{
+		*reason_phrase_ptr = line + 1;
+	}
 
-  return statcode;
+	return statcode;
 }
 
 /* Functions to be used as arguments to header_process(): */
@@ -227,14 +261,14 @@ int header_extract_number (const char *header, void *closure)
 	return 1;
 }
 
-/* Strdup HEADER, and place the pointer to CLOSURE.  */
-int header_strdup (const char *header, void *closure)
+/* myStrdup HEADER, and place the pointer to CLOSURE.  */
+int header_myStrdup (const char *header, void *closure)
 {
-	*(char **)closure = strdup (header);
+	*(char **)closure = myStrdup (header);
 	return 1;
 }
 
-char *strdupdelim (const char *beg, const char *end)
+char *myStrdupdelim (const char *beg, const char *end)
 {
 	char *res = malloc (end - beg + 1);
 	strncpy(res, beg, end - beg);
@@ -257,7 +291,7 @@ static int http_process_type (const char *hdr, void *arg)
 	{
 		--p;
 	}
-	*result = strdupdelim (hdr, p);
+	*result = myStrdupdelim (hdr, p);
 	return 1;
 }
 
@@ -275,6 +309,28 @@ static int http_process_none (const char *hdr, void *arg)
 	}
 	return 1;
 }
+
+struct url
+{
+  char *url;			/* Original URL */
+
+  char *host;			/* Extracted hostname */
+  int port;			/* Port number */
+
+  /* URL components (URL-quoted). */
+  char *path;
+  char *params;
+  char *query;
+  char *fragment;
+
+  /* Extracted path info (unquoted). */
+  char *dir;
+  char *file;
+
+  /* Username and password (unquoted). */
+  char *user;
+  char *passwd;
+};
 
 int oren_ish_shalom=0;
 
@@ -298,13 +354,14 @@ int main(int argc, char **argv)
 	long contlen=0;
 	long contrange=0;
 	int hcount=0;
-	struct url *u;
-	struct http_stat *hs;
+	struct url u_struct;
+	struct url *u = &u_struct;
+	struct http_stat h_struct;
+	struct http_stat *hs = &h_struct;
 	char *authenticate_h;
-	int *dt;
 	int http_keep_alive_1;
 	int http_keep_alive_2;
-	
+		
 	while (1)
 	{
 		char *hdr;
@@ -316,37 +373,48 @@ int main(int argc, char **argv)
 		//	&hdr,
 		//	(hcount == 1 ? HG_NO_CONTINUATIONS : HG_NONE));
 
+		hdr = malloc(64);
+		markString(hdr);
+		hdr[63]=0;
+
+		// strcpy(hdr,"HTTP/4325.669 222 999");
+				
+		// klee_make_symbolic(hdr,64,"hdr");
+
 		/* Check for status line.  */
 		if (hcount == 1)
 		{
 			const char *error;
 			/* Parse the first line of server response.  */
 			statcode = parse_http_status_line (hdr, &error);
+						
 			hs->statcode = statcode;
 			/* Store the descriptive response.  */
 			if (statcode == -1) /* malformed response */
 			{
 				/* A common reason for "malformed response" error is the
-					case when no data was actually received.  Handle this
-					special case.  */
+				case when no data was actually received.  Handle this
+				special case.  */
 				if (!*hdr)
 				{
-					hs->error = strdup("No data received");
+					hs->error = myStrdup("No data received");
 				}
 				else
 				{
-					hs->error = strdup("Malformed status line");
+					hs->error = myStrdup("Malformed status line");
 				}
 				free (hdr);
 				break;
 			}
 			else if (!*error)
 			{
-				hs->error = strdup("(no description)");
+				assert(0);
+				hs->error = myStrdup("(no description)");
 			}
 			else
 			{
-				hs->error = strdup (error);
+				assert(0);
+				hs->error = myStrdup (error);
 			}
 
 			if (statcode != -1)
@@ -378,6 +446,7 @@ int main(int argc, char **argv)
 		{
 			if (header_process (hdr, "Content-Length", header_extract_number,&contlen))
 			{
+				assert(0);
 				goto done_header;
 			}
 		}
@@ -392,7 +461,7 @@ int main(int argc, char **argv)
 		/* Try getting location.  */
 		// if (!hs->newloc)
 		{
-			if (header_process (hdr, "Location", header_strdup, &hs->newloc))
+			if (header_process (hdr, "Location", header_myStrdup, &hs->newloc))
 			{
 				goto done_header;
 			}
@@ -400,7 +469,7 @@ int main(int argc, char **argv)
 		/* Try getting last-modified.  */
 		// if (!hs->remote_time)
 		{
-			if (header_process (hdr, "Last-Modified", header_strdup,&hs->remote_time))
+			if (header_process (hdr, "Last-Modified", header_myStrdup,&hs->remote_time))
 			{
 				goto done_header;
 			}
@@ -408,7 +477,7 @@ int main(int argc, char **argv)
 		/* Try getting www-authentication.  */
 		// if (!authenticate_h)
 		{
-			if (header_process (hdr, "WWW-Authenticate", header_strdup,&authenticate_h))
+			if (header_process (hdr, "WWW-Authenticate", header_myStrdup,&authenticate_h))
 			{
 				goto done_header;
 			}
@@ -458,9 +527,9 @@ int main(int argc, char **argv)
 				goto done_header;
 			}
 	    }
-
-	done_header:
-		free(hdr);
+		done_header:
+			oren_ish_shalom = 9;
     }
+	return 0;
 }
 
