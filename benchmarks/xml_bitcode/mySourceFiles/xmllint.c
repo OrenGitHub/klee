@@ -3140,19 +3140,6 @@ main(int argc, char **argv) {
     int files = 0;
     int version = 0;
     const char* indent;
-        
-    argc=4;
-    char *argv1 = malloc(32);
-    char *argv2 = malloc(32);
-    char *argv3 = malloc(32);
-
-	klee_make_symbolic(argv1,"argv1",32);
-	klee_make_symbolic(argv2,"argv2",32);
-	klee_make_symbolic(argv3,"argv3",32);
-
-	argv[1]=argv1;
-	argv[2]=argv2;
-	argv[3]=argv3;
 
     if (argc <= 1) {
 	usage(argv[0]);
@@ -3166,7 +3153,9 @@ main(int argc, char **argv) {
 	if (argv[i][0] != '-')
 	    continue;
 	if ((!strcmp(argv[i], "-debug")) || (!strcmp(argv[i], "--debug")))
+	{
 	    debug++;
+	}
 	else
 #ifdef LIBXML_DEBUG_ENABLED
 	if ((!strcmp(argv[i], "-shell")) ||
@@ -3200,6 +3189,7 @@ main(int argc, char **argv) {
 	    options |= XML_PARSE_NSCLEAN;
 	} else if ((!strcmp(argv[i], "-nocdata")) ||
 	         (!strcmp(argv[i], "--nocdata"))) {
+	    assert(0);
 	    options |= XML_PARSE_NOCDATA;
 	} else if ((!strcmp(argv[i], "-nodict")) ||
 	         (!strcmp(argv[i], "--nodict"))) {

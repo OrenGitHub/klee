@@ -79,16 +79,17 @@ compile_and_run:
 	#-use-query-log=all:kquery                                  \
 	#-use-query-log=solver:smt2                      \
 	# gdb -x ./myGdbScripts/gdbCommands.txt --args    \
-	${KLEE}                                         \
-	--libc=uclibc                                   \
-	--posix-runtime                                 \
-	-solver-backend=z3                              \
-	-use-independent-solver=0                       \
-	-use-cex-cache=0                                \
-	-use-query-log=solver:kquery                    \
-	-debug-z3-dump-queries=Z3queries.txt            \
-	-debug-z3-log-api-interaction=Z3LogAPI.txt      \
-	${PROGRAM_PATH}/${PROGRAM_NAME}_no_dbg_with_names.bc 
+	${KLEE}                                              \
+	--libc=uclibc                                        \
+	--posix-runtime                                      \
+	-solver-backend=z3                                   \
+	-use-independent-solver=0                            \
+	-use-cex-cache=0                                     \
+	-use-query-log=solver:kquery                         \
+	-debug-z3-dump-queries=Z3queries.txt                 \
+	-debug-z3-log-api-interaction=Z3LogAPI.txt           \
+	${PROGRAM_PATH}/${PROGRAM_NAME}_no_dbg_with_names.bc \
+	--sym-args 4 4 32
 	@setterm -term linux -fore blue
 	@echo "******************************************"
 	@echo "*                                        *"
