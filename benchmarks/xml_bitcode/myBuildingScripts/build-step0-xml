@@ -1,0 +1,56 @@
+#!/bin/bash
+#########
+# FILES #
+#########
+PACKAGE_NAME=libxml2-2.9.4
+PACKAGE_TAR_FILE=${PACKAGE_NAME}.tar.gz
+PACKAGE_FTP_SITE=ftp://xmlsoft.org/libxml2/
+
+####################################
+# REMOVE OLD STUFF JUST TO BE SURE #
+####################################
+rm -rf build
+rm -rf ${PACKAGE_NAME}
+rm -rf ${PACKAGE_TAR_FILE}
+
+#####################################
+# Get source code for buggy package #
+#####################################
+wget ${PACKAGE_FTP_SITE}/${PACKAGE_TAR_FILE}
+
+######################
+# Unpack it here ... #
+######################
+tar xf ${PACKAGE_TAR_FILE}
+
+##########################################
+# Prepare an out of tree build directory #
+##########################################
+mkdir build
+
+##############################
+# Get inside build directory #
+##############################
+cd build
+
+#################
+# Configure ... #
+#################
+CC=wllvm                     \
+LLVM_COMPILER=clang          \
+CFLAGS="-g -O0"              \
+../${PACKAGE_NAME}/configure \
+--enable-shared=no           \
+--enable-static=yes          \
+--without-threads
+
+###############
+# Make it !!! #
+###############
+LLVM_COMPILER=clang make -j
+
+###########################
+# extract-bc from xmllint #
+###########################
+extract-bc ./xmllint
+
