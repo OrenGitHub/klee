@@ -108,5 +108,5 @@ build_everything_from_scratch:
 	@echo "*                                   *"
 	@echo "*************************************"
 	@setterm -term linux -fore white
-	./myBuildingScripts/build-step0-${PROGRAM_NAME}
+	./myBuildingScripts/build-step0-xml
 
