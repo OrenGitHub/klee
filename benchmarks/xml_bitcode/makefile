@@ -83,8 +83,6 @@ compile_and_run:
 	--libc=uclibc                                   \
 	--posix-runtime                                 \
 	-solver-backend=z3                              \
-	-output-module                                  \
-	-output-source                                  \
 	-use-independent-solver=0                       \
 	-use-cex-cache=0                                \
 	-use-query-log=solver:kquery                    \
