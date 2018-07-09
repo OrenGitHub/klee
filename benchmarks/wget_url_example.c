@@ -2135,7 +2135,7 @@ inline
               _Bool
 
 # 169 "../lib/c-ctype.h"
-c_isalnum (int c)
+isalnum (int c)
 {
   switch (c)
     {
@@ -2161,7 +2161,7 @@ inline
               _Bool
 
 # 183 "../lib/c-ctype.h"
-c_isalpha (int c)
+isalpha (int c)
 {
   switch (c)
     {
@@ -2188,7 +2188,7 @@ inline
               _Bool
 
 # 198 "../lib/c-ctype.h"
-c_isascii (int c)
+isascii (int c)
 {
   switch (c)
     {
@@ -2217,7 +2217,7 @@ inline
               _Bool
 
 # 215 "../lib/c-ctype.h"
-c_isblank (int c)
+isblank (int c)
 {
   return c == ' ' || c == '\t';
 }
@@ -2227,7 +2227,7 @@ inline
               _Bool
 
 # 221 "../lib/c-ctype.h"
-c_iscntrl (int c)
+iscntrl (int c)
 {
   switch (c)
     {
@@ -2251,7 +2251,7 @@ inline
               _Bool
 
 # 233 "../lib/c-ctype.h"
-c_isdigit (int c)
+isdigit (int c)
 {
   switch (c)
     {
@@ -2275,7 +2275,7 @@ inline
               _Bool
 
 # 245 "../lib/c-ctype.h"
-c_isgraph (int c)
+isgraph (int c)
 {
   switch (c)
     {
@@ -2302,7 +2302,7 @@ inline
               _Bool
 
 # 260 "../lib/c-ctype.h"
-c_islower (int c)
+islower (int c)
 {
   switch (c)
     {
@@ -2326,7 +2326,7 @@ inline
               _Bool
 
 # 272 "../lib/c-ctype.h"
-c_isprint (int c)
+isprint (int c)
 {
   switch (c)
     {
@@ -2354,7 +2354,7 @@ inline
               _Bool
 
 # 288 "../lib/c-ctype.h"
-c_ispunct (int c)
+ispunct (int c)
 {
   switch (c)
     {
@@ -2378,7 +2378,7 @@ inline
               _Bool
 
 # 300 "../lib/c-ctype.h"
-c_isspace (int c)
+isspace (int c)
 {
   switch (c)
     {
@@ -2402,7 +2402,7 @@ inline
               _Bool
 
 # 312 "../lib/c-ctype.h"
-c_isupper (int c)
+isupper (int c)
 {
   switch (c)
     {
@@ -2426,7 +2426,7 @@ inline
               _Bool
 
 # 324 "../lib/c-ctype.h"
-c_isxdigit (int c)
+isxdigit (int c)
 {
   switch (c)
     {
@@ -3130,7 +3130,7 @@ inline void *xnmalloc (size_t n, size_t s)
 inline void *
 xnmalloc (size_t n, size_t s)
 {
-  return xmalloc (n * s);
+  return malloc (n * s);
 }
 
 
@@ -3203,7 +3203,7 @@ inline char *xcharalloc (size_t n)
 inline char *
 xcharalloc (size_t n)
 {
-  return ((char *) (sizeof (char) == 1 ? xmalloc (n) : xnmalloc (n, sizeof (char))));
+  return ((char *) (sizeof (char) == 1 ? malloc (n) : xnmalloc (n, sizeof (char))));
 }
 # 264 "../lib/xalloc.h"
 
@@ -9531,9 +9531,9 @@ url_unescape_1 (char *s, unsigned char mask)
         {
           char c;
 
-          if (!h[1] || !h[2] || !(c_isxdigit (h[1]) && c_isxdigit (h[2])))
+          if (!h[1] || !h[2] || !(isxdigit (h[1]) && isxdigit (h[2])))
             goto copychar;
-          c = ((((h[1]) < 'A' ? (h[1]) - '0' : c_toupper (h[1]) - 'A' + 10) << 4) + ((h[2]) < 'A' ? (h[2]) - '0' : c_toupper (h[2]) - 'A' + 10));
+          c = ((((h[1]) < 'A' ? (h[1]) - '0' :toupper (h[1]) - 'A' + 10) << 4) + ((h[2]) < 'A' ? (h[2]) - '0' :toupper (h[2]) - 'A' + 10));
           if ((urlchr_table[(unsigned char)(c)] & (mask)))
             goto copychar;
 
@@ -9581,10 +9581,10 @@ url_escape_1 (const char *s, unsigned char mask,
       addition += 2;
 
   if (!addition)
-    return allow_passthrough ? (char *)s : xstrdup (s);
+    return allow_passthrough ? (char *)s : strdup (s);
 
   newlen = (p1 - s) + addition;
-  newstr = xmalloc (newlen + 1);
+  newstr = malloc (newlen + 1);
 
   p1 = s;
   p2 = newstr;
@@ -9665,7 +9665,7 @@ char_needs_escaping (const char *p)
 {
   if (*p == '%')
     {
-      if (c_isxdigit (*(p + 1)) && c_isxdigit (*(p + 2)))
+      if (isxdigit (*(p + 1)) && isxdigit (*(p + 2)))
         return 
 # 319 "url.c" 3 4
               0
@@ -9715,7 +9715,7 @@ reencode_escapes (const char *s)
   oldlen = p1 - s;
 
   newlen = oldlen + 2 * encode_count;
-  newstr = xmalloc (newlen + 1);
+  newstr = malloc (newlen + 1);
 
 
 
@@ -9779,7 +9779,7 @@ url_has_scheme (const char *url)
   const char *p = url;
 
 
-  if (!*p || !(c_isalnum (*p) || (*p) == '-' || (*p) == '+'))
+  if (!*p || !(isalnum (*p) || (*p) == '-' || (*p) == '+'))
     return 
 # 487 "url.c" 3 4
           0
@@ -9787,7 +9787,7 @@ url_has_scheme (const char *url)
                ;
   ++p;
 
-  while (*p && (c_isalnum (*p) || (*p) == '-' || (*p) == '+'))
+  while (*p && (isalnum (*p) || (*p) == '-' || (*p) == '+'))
     ++p;
 
   return *p == ':';
@@ -9984,14 +9984,14 @@ lowercase_str (char *str)
 # 647 "url.c"
                      ;
   for (; *str; str++)
-    if (c_isupper (*str))
+    if (isupper (*str))
       {
         changed = 
 # 651 "url.c" 3 4
                  1
 # 651 "url.c"
                      ;
-        *str = c_tolower (*str);
+        *str =tolower (*str);
       }
   return changed;
 }
@@ -10121,7 +10121,7 @@ url_parse (const char *url, int *error, struct iri *iri,
          ((void *)0)
 # 745 "url.c"
          ; } while (0);
-          iri->orig_url = xstrdup (url);
+          iri->orig_url = strdup (url);
           url_encoded = reencode_escapes (new_url);
           if (url_encoded != new_url)
             do { free ((void *) (new_url)); new_url = 
@@ -10234,7 +10234,7 @@ url_parse (const char *url, int *error, struct iri *iri,
       if (port_b != port_e)
         for (port = 0, pp = port_b; pp < port_e; pp++)
           {
-            if (!c_isdigit (*pp))
+            if (!isdigit (*pp))
               {
 
 
@@ -10282,7 +10282,7 @@ url_parse (const char *url, int *error, struct iri *iri,
         }
     }
 
-  u = (xcalloc (1, sizeof (struct url)));
+  u = (calloc (1, sizeof (struct url)));
   u->scheme = scheme;
   u->host = strdupdelim (host_b, host_e);
   u->port = port;
@@ -10362,7 +10362,7 @@ url_parse (const char *url, int *error, struct iri *iri,
   else
     {
       if (url_encoded == url)
-        u->url = xstrdup (url);
+        u->url = strdup (url);
       else
         u->url = (char *) url_encoded;
     }
@@ -10404,7 +10404,7 @@ url_error (const char *url, int error_code)
   if (error_code == 1)
     {
       char *error, *p;
-      char *scheme = xstrdup (url);
+      char *scheme = strdup (url);
       
 # 993 "url.c" 3 4
      ((void) (0))
@@ -10426,7 +10426,7 @@ url_error (const char *url, int error_code)
       return error;
     }
   else
-    return xstrdup (((const char *) (parse_errors[error_code])));
+    return strdup (((const char *) (parse_errors[error_code])));
 }
 # 1024 "url.c"
 static void
@@ -10435,13 +10435,13 @@ split_path (const char *path, char **dir, char **file)
   char *last_slash = strrchr (path, '/');
   if (!last_slash)
     {
-      *dir = xstrdup ("");
-      *file = xstrdup (path);
+      *dir = strdup ("");
+      *file = strdup (path);
     }
   else
     {
       *dir = strdupdelim (path, last_slash);
-      *file = xstrdup (last_slash + 1);
+      *file = strdup (last_slash + 1);
     }
   url_unescape (*dir);
   url_unescape (*file);
@@ -10484,7 +10484,7 @@ char *
 url_full_path (const struct url *url)
 {
   int length = full_path_length (url);
-  char *full_path = xmalloc (length + 1);
+  char *full_path = malloc (length + 1);
 
   full_path_write (url, full_path);
   full_path[length] = '\0';
@@ -10554,14 +10554,14 @@ sync_path (struct url *u)
   efile = url_escape_1 (u->file, urlchr_unsafe | urlchr_reserved, 1);
 
   if (!*edir)
-    newpath = xstrdup (efile);
+    newpath = strdup (efile);
   else
     {
       int dirlen = strlen (edir);
       int filelen = strlen (efile);
 
 
-      char *p = newpath = xmalloc (dirlen + 1 + filelen + 1);
+      char *p = newpath = malloc (dirlen + 1 + filelen + 1);
       memcpy (p, edir, dirlen);
       p += dirlen;
       *p++ = '/';
@@ -10605,7 +10605,7 @@ url_set_dir (struct url *url, const char *newdir)
  ((void *)0)
 # 1197 "url.c"
  ; } while (0);
-  url->dir = xstrdup (newdir);
+  url->dir = strdup (newdir);
   sync_path (url);
 }
 
@@ -10617,7 +10617,7 @@ url_set_file (struct url *url, const char *newfile)
  ((void *)0)
 # 1205 "url.c"
  ; } while (0);
-  url->file = xstrdup (newfile);
+  url->file = strdup (newfile);
   sync_path (url);
 }
 
@@ -10892,7 +10892,7 @@ append_uri_pathel (const char *b, const char *e,
 
   quoted = 0;
   for (p = b; p < e; p++)
-    if (((opt.restrict_files_nonascii && !c_isascii ((unsigned char)(*p))) || (filechr_table[(unsigned char)(*p)] & (mask))))
+    if (((opt.restrict_files_nonascii && !isascii ((unsigned char)(*p))) || (filechr_table[(unsigned char)(*p)] & (mask))))
       ++quoted;
 
 
@@ -10912,7 +10912,7 @@ append_uri_pathel (const char *b, const char *e,
       char *q = ((dest)->base + (dest)->tail);
       for (p = b; p < e; p++)
         {
-          if (!((opt.restrict_files_nonascii && !c_isascii ((unsigned char)(*p))) || (filechr_table[(unsigned char)(*p)] & (mask))))
+          if (!((opt.restrict_files_nonascii && !isascii ((unsigned char)(*p))) || (filechr_table[(unsigned char)(*p)] & (mask))))
             *q++ = *p;
           else
             {
@@ -10937,9 +10937,9 @@ append_uri_pathel (const char *b, const char *e,
       for (q = ((dest)->base + (dest)->tail); q < ((dest)->base + (dest)->tail) + outlen; ++q)
         {
           if (opt.restrict_files_case == restrict_lowercase)
-            *q = c_tolower (*q);
+            *q =tolower (*q);
           else
-            *q = c_toupper (*q);
+            *q =toupper (*q);
         }
     }
 
@@ -10976,7 +10976,7 @@ convert_fname (char *fname)
     {
       inlen = strlen (fname);
       len = outlen = inlen * 2;
-      converted_fname = s = xmalloc (outlen + 1);
+      converted_fname = s = malloc (outlen + 1);
       done = 0;
 
       for (;;)
@@ -11380,7 +11380,7 @@ uri_merge (const char *base, const char *link)
   char *merge;
 
   if (url_has_scheme (link))
-    return xstrdup (link);
+    return strdup (link);
 
 
   end = path_end (base);
@@ -11389,7 +11389,7 @@ uri_merge (const char *base, const char *link)
   if (!*link)
     {
 
-      return xstrdup (base);
+      return strdup (base);
     }
   else if (*link == '?')
     {
@@ -11400,7 +11400,7 @@ uri_merge (const char *base, const char *link)
 
 
       int baselength = end - base;
-      merge = xmalloc (baselength + linklength + 1);
+      merge = malloc (baselength + linklength + 1);
       memcpy (merge, base, baselength);
       memcpy (merge + baselength, link, linklength);
       merge[baselength + linklength] = '\0';
@@ -11416,7 +11416,7 @@ uri_merge (const char *base, const char *link)
       if (!end1)
         end1 = base + strlen (base);
       baselength = end1 - base;
-      merge = xmalloc (baselength + linklength + 1);
+      merge = malloc (baselength + linklength + 1);
       memcpy (merge, base, baselength);
       memcpy (merge + baselength, link, linklength);
       merge[baselength + linklength] = '\0';
@@ -11439,7 +11439,7 @@ uri_merge (const char *base, const char *link)
         start_insert = base;
 
       span = start_insert - base;
-      merge = xmalloc (span + linklength + 1);
+      merge = malloc (span + linklength + 1);
       if (span)
         memcpy (merge, base, span);
       memcpy (merge + span, link, linklength);
@@ -11510,7 +11510,7 @@ uri_merge (const char *base, const char *link)
         start_insert = slash;
 
       span = start_insert - base;
-      merge = xmalloc (span + linklength + 1);
+      merge = malloc (span + linklength + 1);
       if (span)
         memcpy (merge, base, span);
       memcpy (merge + span, link, linklength);
@@ -11560,7 +11560,7 @@ uri_merge (const char *base, const char *link)
         }
 
       span = start_insert - base;
-      merge = xmalloc (span + linklength + 1);
+      merge = malloc (span + linklength + 1);
       if (span)
         memcpy (merge, base, span);
       if (need_explicit_slash)
@@ -11648,7 +11648,7 @@ url_string (const struct url *url, enum url_auth_mode auth_mode)
         size += 1 + strlen (quoted_passwd);
     }
 
-  p = result = xmalloc (size);
+  p = result = malloc (size);
 
   do { int len = strlen (scheme_str); memcpy (p, scheme_str, len); p += len; } while (0);
   if (quoted_user)
@@ -11758,7 +11758,7 @@ getchar_from_escaped_string (const char *str, char *c)
 
   if (p[0] == '%')
     {
-      if (!c_isxdigit(p[1]) || !c_isxdigit(p[2]))
+     if (!isxdigit(p[1]) || !isxdigit(p[2]))
         {
           *c = '%';
           return 1;
@@ -11768,7 +11768,7 @@ getchar_from_escaped_string (const char *str, char *c)
           if (p[2] == 0)
             return 0;
 
-          *c = ((((p[1]) < 'A' ? (p[1]) - '0' : c_toupper (p[1]) - 'A' + 10) << 4) + ((p[2]) < 'A' ? (p[2]) - '0' : c_toupper (p[2]) - 'A' + 10));
+          *c = ((((p[1]) < 'A' ? (p[1]) - '0' :toupper (p[1]) - 'A' + 10) << 4) + ((p[2]) < 'A' ? (p[2]) - '0' :toupper (p[2]) - 'A' + 10));
           if ((urlchr_table[(unsigned char)(*c)] & (urlchr_reserved)))
             {
               *c = '%';
@@ -11808,7 +11808,7 @@ are_urls_equal (const char *u1, const char *u2)
   while (*p && *q
          && (pp = getchar_from_escaped_string (p, &ch1))
          && (qq = getchar_from_escaped_string (q, &ch2))
-         && (c_tolower(ch1) == c_tolower(ch2)))
+         && (tolower(ch1) ==tolower(ch2)))
     {
       p += pp;
       q += qq;
