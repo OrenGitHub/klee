@@ -3158,6 +3158,7 @@ main(int argc, char **argv) {
 	usage(argv[0]);
 	return(1);
     }
+    
 	assert(0);
     LIBXML_TEST_VERSION
     for (i = 1; i < argc ; i++) {
