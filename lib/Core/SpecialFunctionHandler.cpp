@@ -96,6 +96,7 @@ static SpecialFunctionHandler::HandlerInfo handlerInfo[] = {
   add("strcpy",                      handleStrcpy,                    false),
   add("strncpy",                     handleStrncpy,                   false),
   add("strchr",                      handleStrchr,                    true),
+  add("strpbrk",                     handleStrpbrk,                    true),
   add("strstr",                      handleStrstr,                    true),
   add("strrchr",                     handleStrrchr,                   true),
   add("strcmp",                      handleStrcmp,                    true),
@@ -1219,7 +1220,7 @@ void SpecialFunctionHandler::handleStrstr(
 	KInstruction *target,
 	std::vector<ref<Expr> > &arguments)
 {
-	bool isOnlyCompare = true;
+//	bool isOnlyCompare = true;
 	// errs() << "Uses of strstr: \n";
 	//for(auto i = target->inst->use_begin(); i != target->inst->use_end(); i++)
 	//{
@@ -1311,6 +1312,30 @@ void SpecialFunctionHandler::handleStrchr(
                       executor.resolveOne(state,arguments[0]).second, 
                       arguments[0],
                       arguments[1]);
+
+  Executor::StatePair branches = executor.fork(state, m.second, true);
+  ExecutionState *valid_access = branches.first;
+  ExecutionState *invalid_access= branches.second;
+  if(invalid_access) {
+      executor.terminateStateOnError(*invalid_access, 
+          "Strchr has out of bounds behaviour", Executor::Ptr);
+  }
+
+  executor.bindLocal(target,*valid_access, m.first);
+}
+
+void SpecialFunctionHandler::handleStrpbrk(
+	ExecutionState &state,
+	KInstruction *target,
+	std::vector<ref<Expr> > &arguments)
+{
+ 
+  StrModel m = stringModel.modelStrpbrk(
+                      executor.resolveOne(state,arguments[0]).second, 
+                      arguments[0],
+                      executor.resolveOne(state,arguments[1]).second, 
+                      arguments[1],
+                      state);
 
   Executor::StatePair branches = executor.fork(state, m.second, true);
   ExecutionState *valid_access = branches.first;

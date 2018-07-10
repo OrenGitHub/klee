@@ -355,6 +355,77 @@ StrModel StringModel::modelStrstr(
 	return std::make_pair(strstrReturnValue,validAcess);
 }
 
+StrModel StringModel::modelStrpbrk(const ObjectState* os, ref<Expr> s, 
+                                   const ObjectState* accept_os, ref<Expr> accept,
+                                   ExecutionState& state) {
+  const MemoryObject* mos = os->getObject();
+  const MemoryObject* mo_accept = accept_os->getObject();
+
+  static int strpbrk_tmp = 0;
+	/*******************************/
+	/* [5] Check if c appears in p */
+	/*******************************/
+	ref<Expr> size   = mos->getIntSizeExpr();
+	ref<Expr> offset = mos->getOffsetExpr(s);	
+	ref<Expr> p_var  = StrSubstrExpr::create(
+		StrVarExpr::create(os->getABSerial()),
+		BvToIntExpr::create(offset),
+		SubExpr::create(size,offset));
+
+
+  ref<Expr> accept_offset = mo_accept->getOffsetExpr(accept);
+  ref<Expr> accept_var = StrSubstrExpr::create(
+    StrVarExpr::create(accept_os->getABSerial()),
+    BvToIntExpr::create(accept_offset),
+    SubExpr::create(mo_accept->getIntSizeExpr(), accept_offset));
+
+
+  char buf[30];
+  snprintf(buf, sizeof(buf), "AB_strpbrk_tmp_%d", strpbrk_tmp++);
+  ref<Expr> freshStrVar = StrVarExpr::create(buf);
+
+	state.addConstraint(EqExpr::create(
+        StrLengthExpr::create(freshStrVar),
+        BvToIntExpr::create(ConstantExpr::create(1, Expr::Int64))));
+
+  state.addConstraint(StrContainsExpr::create(accept_var, freshStrVar));
+
+	/*******************************/
+	/* [7] Check if c appears in p */
+	/*******************************/
+	ref<Expr> firstIndexOfc   = StrFirstIdxOfExpr::create(p_var,freshStrVar);
+	ref<Expr> firstIndexOfx00 = StrFirstIdxOfExpr::create(p_var,x00);
+
+	/*******************************/
+	/* [8] Check if c appears in p */
+	/*******************************/
+	ref<Expr> c_appears_in_p = NotExpr::create(EqExpr::create(firstIndexOfc,minusOne));	
+	ref<Expr> c_appears_in_p_before_x00 = SltExpr::create(firstIndexOfc,firstIndexOfx00);
+
+	/****************************************************************************/
+	/* [9] Issue an error when invoking strchr on a non NULL terminated string, */
+	/*     and the specific char can be missing ...                             */
+	/****************************************************************************/
+  ref<Expr> validAcess = AndExpr::create(
+    OrExpr::create(
+       NotExpr::create(EqExpr::create(firstIndexOfc,  minusOne)),
+       NotExpr::create(EqExpr::create(firstIndexOfx00,  minusOne))
+    ),
+    mos->getBoundsCheckPointer(s)
+  );
+
+ ref<Expr> strchrReturnValue = 
+    SelectExpr::create(
+          AndExpr::create(
+            c_appears_in_p,
+            c_appears_in_p_before_x00),
+          AddExpr::create(
+            firstIndexOfc,
+            s),
+          zero);
+
+ return std::make_pair(strchrReturnValue, validAcess);
+}
 StrModel StringModel::modelStrchr(const ObjectState* os, ref<Expr> s, ref<Expr> c) {
   const MemoryObject* mos = os->getObject();
 	/*******************************/

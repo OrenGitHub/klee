@@ -146,6 +146,7 @@ namespace klee {
     HANDLER(handleStrchr);
     HANDLER(handleStrstr);
     HANDLER(handleStrrchr);
+    HANDLER(handleStrpbrk);
     HANDLER(handleStrlen);
     HANDLER(handleStrnlen);
     HANDLER(handleMyIntAssign);

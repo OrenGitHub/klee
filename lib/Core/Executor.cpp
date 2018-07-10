@@ -3809,7 +3809,7 @@ bool Executor::getSymbolicSolution(const ExecutionState &state,
 //      errs() << "Working on " << mo->name << " size: " << mo->size << "\n";
       std::vector<unsigned char> buf;
       char numBuf[3];
-      for(int j = 0; j < values[i].size(); j++) {
+      for(unsigned j = 0; j < values[i].size(); j++) {
        if(values[i][j] == '\\') {
            j++;
             switch(values[i][j]) {

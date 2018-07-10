@@ -128,8 +128,8 @@ ExprVisitor::Action ExprEvaluator::visitStrVar(const StrVarExpr& se) {
        } else 
         ret.push_back(c[i]);
    }
-   llvm::errs() << "Evaluated str var " << se.name << " to " ;//<< std::string(c.begin(), c.end()) << "\n";
-   printVectorString(ret);
+//   llvm::errs() << "Evaluated str var " << se.name << " to " ;//<< std::string(c.begin(), c.end()) << "\n";
+//   printVectorString(ret);
    return Action::changeTo(StrConstExpr::alloc(ret));
 }
 
@@ -330,7 +330,11 @@ ExprVisitor::Action ExprEvaluator::visitFirstIndexOf(const StrFirstIdxOfExpr& sf
     ref<Expr> _needle = visit(sfi.needle);
 
     StrConstExpr* haystack = dyn_cast<StrConstExpr>(_haystack);
-    if(haystack == nullptr) return Action::skipChildren();
+    if(haystack == nullptr) {
+      llvm::errs() << "haystack not constant!\n";
+      _haystack->dump();
+        return Action::skipChildren();
+    }
     assert(haystack && "Haystack must be a constant string");
     std::vector<unsigned char> needle;
     if(ConstantExpr* n = dyn_cast<ConstantExpr>(_needle)) {
@@ -340,6 +344,8 @@ ExprVisitor::Action ExprEvaluator::visitFirstIndexOf(const StrFirstIdxOfExpr& sf
     } else if(StrConstExpr* n = dyn_cast<StrConstExpr>(_needle)) {
         needle = n->data;
     } else {
+      llvm::errs() << "Needle not constant!\n";
+      _needle->dump();
       return Action::skipChildren();
       assert(false && "Needle must be constant bitvec");
     }
@@ -406,6 +412,9 @@ ExprVisitor::Action ExprEvaluator::visitStrSubstr(const StrSubstrExpr &subStrE) 
                                         theString->data.begin() + offset->getZExtValue() + length->getZExtValue());
       return Action::changeTo(StrConstExpr::alloc(subStr));
     } else {
+      llvm::errs() << "Length or offset not constant:\n";
+      _length->dump();
+      _offset->dump();
       return Action::skipChildren();
       assert(false && "Non constant offsets for substr");
     }

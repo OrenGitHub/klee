@@ -14,6 +14,7 @@
 #define KLEE_STRING_MODEL_H
 
 #include "klee/Expr.h"
+#include "klee/ExecutionState.h"
 #include "Memory.h"
 
 #include <vector>
@@ -73,6 +74,9 @@ public:
                          const ObjectState* moSrc, ref<Expr> src);
     StrModel modelStrncpy(ObjectState* moDst, ref<Expr> dst,
                          const ObjectState* moSrc, ref<Expr> src, ref<Expr> n);
+    StrModel modelStrpbrk(const ObjectState* os, ref<Expr> s, 
+                                   const ObjectState* accept_os, ref<Expr> accept,
+                                   ExecutionState& state);
 
  };
 } // End klee namespace
