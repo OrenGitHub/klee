@@ -3133,6 +3133,7 @@ static void deregisterNode(xmlNodePtr node)
 }
 
 void klee_make_symbolic(void *addr, size_t nbytes, const char *name){}
+void markString(char *ptr){}
 
 int
 main(int argc, char **argv) {
@@ -3141,179 +3142,194 @@ main(int argc, char **argv) {
     int version = 0;
     const char* indent;
 
+	argc = 4;
+    char *my_argv[4];
+    my_argv[0] = malloc(32); 
+    my_argv[1] = malloc(32);
+    my_argv[2] = malloc(32);
+    my_argv[3] = malloc(32);
+
+    markString(my_argv[0]);
+    markString(my_argv[1]);
+    markString(my_argv[2]);
+    markString(my_argv[3]);
+
     if (argc <= 1) {
 	usage(argv[0]);
 	return(1);
     }
+    
+	assert(0);
     LIBXML_TEST_VERSION
     for (i = 1; i < argc ; i++) {
-	if (!strcmp(argv[i], "-"))
+	if (!strcmp(my_argv[i], "-"))
 	    break;
 
-	if (argv[i][0] != '-')
+	if (my_argv[i][0] != '-')
 	    continue;
-	if ((!strcmp(argv[i], "-debug")) || (!strcmp(argv[i], "--debug")))
+	if ((!strcmp(my_argv[i], "-debug")) || (!strcmp(my_argv[i], "--debug")))
 	{
+		assert(0);
 	    debug++;
 	}
 	else
 #ifdef LIBXML_DEBUG_ENABLED
-	if ((!strcmp(argv[i], "-shell")) ||
-	         (!strcmp(argv[i], "--shell"))) {
+	if ((!strcmp(my_argv[i], "-shell")) ||
+	         (!strcmp(my_argv[i], "--shell"))) {
 	    shell++;
             noout = 1;
         } else
 #endif
 #ifdef LIBXML_TREE_ENABLED
-	if ((!strcmp(argv[i], "-copy")) || (!strcmp(argv[i], "--copy")))
+	if ((!strcmp(my_argv[i], "-copy")) || (!strcmp(my_argv[i], "--copy")))
 	    copy++;
 	else
 #endif /* LIBXML_TREE_ENABLED */
-	if ((!strcmp(argv[i], "-recover")) ||
-	         (!strcmp(argv[i], "--recover"))) {
+	if ((!strcmp(my_argv[i], "-recover")) ||
+	         (!strcmp(my_argv[i], "--recover"))) {
 	    recovery++;
 	    options |= XML_PARSE_RECOVER;
-	} else if ((!strcmp(argv[i], "-huge")) ||
-	         (!strcmp(argv[i], "--huge"))) {
+	} else if ((!strcmp(my_argv[i], "-huge")) ||
+	         (!strcmp(my_argv[i], "--huge"))) {
 	    options |= XML_PARSE_HUGE;
-	} else if ((!strcmp(argv[i], "-noent")) ||
-	         (!strcmp(argv[i], "--noent"))) {
+	} else if ((!strcmp(my_argv[i], "-noent")) ||
+	         (!strcmp(my_argv[i], "--noent"))) {
 	    noent++;
 	    options |= XML_PARSE_NOENT;
-	} else if ((!strcmp(argv[i], "-noenc")) ||
-	         (!strcmp(argv[i], "--noenc"))) {
+	} else if ((!strcmp(my_argv[i], "-noenc")) ||
+	         (!strcmp(my_argv[i], "--noenc"))) {
 	    noenc++;
 	    options |= XML_PARSE_IGNORE_ENC;
-	} else if ((!strcmp(argv[i], "-nsclean")) ||
-	         (!strcmp(argv[i], "--nsclean"))) {
+	} else if ((!strcmp(my_argv[i], "-nsclean")) ||
+	         (!strcmp(my_argv[i], "--nsclean"))) {
 	    options |= XML_PARSE_NSCLEAN;
-	} else if ((!strcmp(argv[i], "-nocdata")) ||
-	         (!strcmp(argv[i], "--nocdata"))) {
+	} else if ((!strcmp(my_argv[i], "-nocdata")) ||
+	         (!strcmp(my_argv[i], "--nocdata"))) {
 	    assert(0);
 	    options |= XML_PARSE_NOCDATA;
-	} else if ((!strcmp(argv[i], "-nodict")) ||
-	         (!strcmp(argv[i], "--nodict"))) {
+	} else if ((!strcmp(my_argv[i], "-nodict")) ||
+	         (!strcmp(my_argv[i], "--nodict"))) {
 	    options |= XML_PARSE_NODICT;
-	} else if ((!strcmp(argv[i], "-version")) ||
-	         (!strcmp(argv[i], "--version"))) {
-	    showVersion(argv[0]);
+	} else if ((!strcmp(my_argv[i], "-version")) ||
+	         (!strcmp(my_argv[i], "--version"))) {
+	    // showVersion(argv[0]);
 	    version = 1;
-	} else if ((!strcmp(argv[i], "-noout")) ||
-	         (!strcmp(argv[i], "--noout")))
+	} else if ((!strcmp(my_argv[i], "-noout")) ||
+	         (!strcmp(my_argv[i], "--noout")))
 	    noout++;
 #ifdef LIBXML_OUTPUT_ENABLED
-	else if ((!strcmp(argv[i], "-o")) ||
-	         (!strcmp(argv[i], "-output")) ||
-	         (!strcmp(argv[i], "--output"))) {
+	else if ((!strcmp(my_argv[i], "-o")) ||
+	         (!strcmp(my_argv[i], "-output")) ||
+	         (!strcmp(my_argv[i], "--output"))) {
 	    i++;
-	    output = argv[i];
+	    output = my_argv[i];
 	}
 #endif /* LIBXML_OUTPUT_ENABLED */
-	else if ((!strcmp(argv[i], "-htmlout")) ||
-	         (!strcmp(argv[i], "--htmlout")))
+	else if ((!strcmp(my_argv[i], "-htmlout")) ||
+	         (!strcmp(my_argv[i], "--htmlout")))
 	    htmlout++;
-	else if ((!strcmp(argv[i], "-nowrap")) ||
-	         (!strcmp(argv[i], "--nowrap")))
+	else if ((!strcmp(my_argv[i], "-nowrap")) ||
+	         (!strcmp(my_argv[i], "--nowrap")))
 	    nowrap++;
 #ifdef LIBXML_HTML_ENABLED
-	else if ((!strcmp(argv[i], "-html")) ||
-	         (!strcmp(argv[i], "--html"))) {
+	else if ((!strcmp(my_argv[i], "-html")) ||
+	         (!strcmp(my_argv[i], "--html"))) {
 	    html++;
         }
-	else if ((!strcmp(argv[i], "-xmlout")) ||
-	         (!strcmp(argv[i], "--xmlout"))) {
+	else if ((!strcmp(my_argv[i], "-xmlout")) ||
+	         (!strcmp(my_argv[i], "--xmlout"))) {
 	    xmlout++;
-	} else if ((!strcmp(argv[i], "-nodefdtd")) ||
-	         (!strcmp(argv[i], "--nodefdtd"))) {
+	} else if ((!strcmp(my_argv[i], "-nodefdtd")) ||
+	         (!strcmp(my_argv[i], "--nodefdtd"))) {
             nodefdtd++;
 	    options |= HTML_PARSE_NODEFDTD;
         }
 #endif /* LIBXML_HTML_ENABLED */
-	else if ((!strcmp(argv[i], "-loaddtd")) ||
-	         (!strcmp(argv[i], "--loaddtd"))) {
+	else if ((!strcmp(my_argv[i], "-loaddtd")) ||
+	         (!strcmp(my_argv[i], "--loaddtd"))) {
 	    loaddtd++;
 	    options |= XML_PARSE_DTDLOAD;
-	} else if ((!strcmp(argv[i], "-dtdattr")) ||
-	         (!strcmp(argv[i], "--dtdattr"))) {
+	} else if ((!strcmp(my_argv[i], "-dtdattr")) ||
+	         (!strcmp(my_argv[i], "--dtdattr"))) {
 	    loaddtd++;
 	    dtdattrs++;
 	    options |= XML_PARSE_DTDATTR;
 	}
 #ifdef LIBXML_VALID_ENABLED
-	else if ((!strcmp(argv[i], "-valid")) ||
-	         (!strcmp(argv[i], "--valid"))) {
+	else if ((!strcmp(my_argv[i], "-valid")) ||
+	         (!strcmp(my_argv[i], "--valid"))) {
 	    valid++;
 	    options |= XML_PARSE_DTDVALID;
-	} else if ((!strcmp(argv[i], "-postvalid")) ||
-	         (!strcmp(argv[i], "--postvalid"))) {
+	} else if ((!strcmp(my_argv[i], "-postvalid")) ||
+	         (!strcmp(my_argv[i], "--postvalid"))) {
 	    postvalid++;
 	    loaddtd++;
 	    options |= XML_PARSE_DTDLOAD;
-	} else if ((!strcmp(argv[i], "-dtdvalid")) ||
-	         (!strcmp(argv[i], "--dtdvalid"))) {
+	} else if ((!strcmp(my_argv[i], "-dtdvalid")) ||
+	         (!strcmp(my_argv[i], "--dtdvalid"))) {
 	    i++;
-	    dtdvalid = argv[i];
+	    dtdvalid = my_argv[i];
 	    loaddtd++;
 	    options |= XML_PARSE_DTDLOAD;
-	} else if ((!strcmp(argv[i], "-dtdvalidfpi")) ||
-	         (!strcmp(argv[i], "--dtdvalidfpi"))) {
+	} else if ((!strcmp(my_argv[i], "-dtdvalidfpi")) ||
+	         (!strcmp(my_argv[i], "--dtdvalidfpi"))) {
 	    i++;
-	    dtdvalidfpi = argv[i];
+	    dtdvalidfpi = my_argv[i];
 	    loaddtd++;
 	    options |= XML_PARSE_DTDLOAD;
         }
 #endif /* LIBXML_VALID_ENABLED */
-	else if ((!strcmp(argv[i], "-dropdtd")) ||
-	         (!strcmp(argv[i], "--dropdtd")))
+	else if ((!strcmp(my_argv[i], "-dropdtd")) ||
+	         (!strcmp(my_argv[i], "--dropdtd")))
 	    dropdtd++;
-	else if ((!strcmp(argv[i], "-insert")) ||
-	         (!strcmp(argv[i], "--insert")))
+	else if ((!strcmp(my_argv[i], "-insert")) ||
+	         (!strcmp(my_argv[i], "--insert")))
 	    insert++;
-	else if ((!strcmp(argv[i], "-timing")) ||
-	         (!strcmp(argv[i], "--timing")))
+	else if ((!strcmp(my_argv[i], "-timing")) ||
+	         (!strcmp(my_argv[i], "--timing")))
 	    timing++;
-	else if ((!strcmp(argv[i], "-auto")) ||
-	         (!strcmp(argv[i], "--auto")))
+	else if ((!strcmp(my_argv[i], "-auto")) ||
+	         (!strcmp(my_argv[i], "--auto")))
 	    generate++;
-	else if ((!strcmp(argv[i], "-repeat")) ||
-	         (!strcmp(argv[i], "--repeat"))) {
+	else if ((!strcmp(my_argv[i], "-repeat")) ||
+	         (!strcmp(my_argv[i], "--repeat"))) {
 	    if (repeat)
 	        repeat *= 10;
 	    else
 	        repeat = 100;
 	}
 #ifdef LIBXML_PUSH_ENABLED
-	else if ((!strcmp(argv[i], "-push")) ||
-	         (!strcmp(argv[i], "--push")))
+	else if ((!strcmp(my_argv[i], "-push")) ||
+	         (!strcmp(my_argv[i], "--push")))
 	    push++;
-	else if ((!strcmp(argv[i], "-pushsmall")) ||
-	         (!strcmp(argv[i], "--pushsmall"))) {
+	else if ((!strcmp(my_argv[i], "-pushsmall")) ||
+	         (!strcmp(my_argv[i], "--pushsmall"))) {
 	    push++;
             pushsize = 10;
         }
 #endif /* LIBXML_PUSH_ENABLED */
 #ifdef HAVE_MMAP
-	else if ((!strcmp(argv[i], "-memory")) ||
-	         (!strcmp(argv[i], "--memory")))
+	else if ((!strcmp(my_argv[i], "-memory")) ||
+	         (!strcmp(my_argv[i], "--memory")))
 	    memory++;
 #endif
-	else if ((!strcmp(argv[i], "-testIO")) ||
-	         (!strcmp(argv[i], "--testIO")))
+	else if ((!strcmp(my_argv[i], "-testIO")) ||
+	         (!strcmp(my_argv[i], "--testIO")))
 	    testIO++;
 #ifdef LIBXML_XINCLUDE_ENABLED
-	else if ((!strcmp(argv[i], "-xinclude")) ||
-	         (!strcmp(argv[i], "--xinclude"))) {
+	else if ((!strcmp(my_argv[i], "-xinclude")) ||
+	         (!strcmp(my_argv[i], "--xinclude"))) {
 	    xinclude++;
 	    options |= XML_PARSE_XINCLUDE;
 	}
-	else if ((!strcmp(argv[i], "-noxincludenode")) ||
-	         (!strcmp(argv[i], "--noxincludenode"))) {
+	else if ((!strcmp(my_argv[i], "-noxincludenode")) ||
+	         (!strcmp(my_argv[i], "--noxincludenode"))) {
 	    xinclude++;
 	    options |= XML_PARSE_XINCLUDE;
 	    options |= XML_PARSE_NOXINCNODE;
 	}
-	else if ((!strcmp(argv[i], "-nofixup-base-uris")) ||
-	         (!strcmp(argv[i], "--nofixup-base-uris"))) {
+	else if ((!strcmp(my_argv[i], "-nofixup-base-uris")) ||
+	         (!strcmp(my_argv[i], "--nofixup-base-uris"))) {
 	    xinclude++;
 	    options |= XML_PARSE_XINCLUDE;
 	    options |= XML_PARSE_NOBASEFIX;
@@ -3321,97 +3337,97 @@ main(int argc, char **argv) {
 #endif
 #ifdef LIBXML_OUTPUT_ENABLED
 #ifdef HAVE_ZLIB_H
-	else if ((!strcmp(argv[i], "-compress")) ||
-	         (!strcmp(argv[i], "--compress"))) {
+	else if ((!strcmp(my_argv[i], "-compress")) ||
+	         (!strcmp(my_argv[i], "--compress"))) {
 	    compress++;
 	    xmlSetCompressMode(9);
         }
 #endif
 #endif /* LIBXML_OUTPUT_ENABLED */
-	else if ((!strcmp(argv[i], "-nowarning")) ||
-	         (!strcmp(argv[i], "--nowarning"))) {
+	else if ((!strcmp(my_argv[i], "-nowarning")) ||
+	         (!strcmp(my_argv[i], "--nowarning"))) {
 	    xmlGetWarningsDefaultValue = 0;
 	    xmlPedanticParserDefault(0);
 	    options |= XML_PARSE_NOWARNING;
         }
-	else if ((!strcmp(argv[i], "-pedantic")) ||
-	         (!strcmp(argv[i], "--pedantic"))) {
+	else if ((!strcmp(my_argv[i], "-pedantic")) ||
+	         (!strcmp(my_argv[i], "--pedantic"))) {
 	    xmlGetWarningsDefaultValue = 1;
 	    xmlPedanticParserDefault(1);
 	    options |= XML_PARSE_PEDANTIC;
         }
 #ifdef LIBXML_DEBUG_ENABLED
-	else if ((!strcmp(argv[i], "-debugent")) ||
-		 (!strcmp(argv[i], "--debugent"))) {
+	else if ((!strcmp(my_argv[i], "-debugent")) ||
+		 (!strcmp(my_argv[i], "--debugent"))) {
 	    debugent++;
 	    xmlParserDebugEntities = 1;
 	}
 #endif
 #ifdef LIBXML_C14N_ENABLED
-	else if ((!strcmp(argv[i], "-c14n")) ||
-		 (!strcmp(argv[i], "--c14n"))) {
+	else if ((!strcmp(my_argv[i], "-c14n")) ||
+		 (!strcmp(my_argv[i], "--c14n"))) {
 	    canonical++;
 	    options |= XML_PARSE_NOENT | XML_PARSE_DTDATTR | XML_PARSE_DTDLOAD;
 	}
-	else if ((!strcmp(argv[i], "-c14n11")) ||
-		 (!strcmp(argv[i], "--c14n11"))) {
+	else if ((!strcmp(my_argv[i], "-c14n11")) ||
+		 (!strcmp(my_argv[i], "--c14n11"))) {
 	    canonical_11++;
 	    options |= XML_PARSE_NOENT | XML_PARSE_DTDATTR | XML_PARSE_DTDLOAD;
 	}
-	else if ((!strcmp(argv[i], "-exc-c14n")) ||
-		 (!strcmp(argv[i], "--exc-c14n"))) {
+	else if ((!strcmp(my_argv[i], "-exc-c14n")) ||
+		 (!strcmp(my_argv[i], "--exc-c14n"))) {
 	    exc_canonical++;
 	    options |= XML_PARSE_NOENT | XML_PARSE_DTDATTR | XML_PARSE_DTDLOAD;
 	}
 #endif
 #ifdef LIBXML_CATALOG_ENABLED
-	else if ((!strcmp(argv[i], "-catalogs")) ||
-		 (!strcmp(argv[i], "--catalogs"))) {
+	else if ((!strcmp(my_argv[i], "-catalogs")) ||
+		 (!strcmp(my_argv[i], "--catalogs"))) {
 	    catalogs++;
-	} else if ((!strcmp(argv[i], "-nocatalogs")) ||
-		 (!strcmp(argv[i], "--nocatalogs"))) {
+	} else if ((!strcmp(my_argv[i], "-nocatalogs")) ||
+		 (!strcmp(my_argv[i], "--nocatalogs"))) {
 	    nocatalogs++;
 	}
 #endif
-	else if ((!strcmp(argv[i], "-encode")) ||
-	         (!strcmp(argv[i], "--encode"))) {
+	else if ((!strcmp(my_argv[i], "-encode")) ||
+	         (!strcmp(my_argv[i], "--encode"))) {
 	    i++;
-	    encoding = argv[i];
+	    encoding = my_argv[i];
 	    /*
 	     * OK it's for testing purposes
 	     */
 	    xmlAddEncodingAlias("UTF-8", "DVEnc");
         }
-	else if ((!strcmp(argv[i], "-noblanks")) ||
-	         (!strcmp(argv[i], "--noblanks"))) {
+	else if ((!strcmp(my_argv[i], "-noblanks")) ||
+	         (!strcmp(my_argv[i], "--noblanks"))) {
 	    noblanks++;
 	    xmlKeepBlanksDefault(0);
 	    options |= XML_PARSE_NOBLANKS;
         }
-	else if ((!strcmp(argv[i], "-maxmem")) ||
-	         (!strcmp(argv[i], "--maxmem"))) {
+	else if ((!strcmp(my_argv[i], "-maxmem")) ||
+	         (!strcmp(my_argv[i], "--maxmem"))) {
 	     i++;
-	     if (sscanf(argv[i], "%d", &maxmem) == 1) {
+	     if (sscanf(my_argv[i], "%d", &maxmem) == 1) {
 	         xmlMemSetup(myFreeFunc, myMallocFunc, myReallocFunc,
 		             myStrdupFunc);
 	     } else {
 	         maxmem = 0;
 	     }
         }
-	else if ((!strcmp(argv[i], "-format")) ||
-	         (!strcmp(argv[i], "--format"))) {
+	else if ((!strcmp(my_argv[i], "-format")) ||
+	         (!strcmp(my_argv[i], "--format"))) {
 	     noblanks++;
 #ifdef LIBXML_OUTPUT_ENABLED
 	     format = 1;
 #endif /* LIBXML_OUTPUT_ENABLED */
 	     xmlKeepBlanksDefault(0);
 	}
-	else if ((!strcmp(argv[i], "-pretty")) ||
-	         (!strcmp(argv[i], "--pretty"))) {
+	else if ((!strcmp(my_argv[i], "-pretty")) ||
+	         (!strcmp(my_argv[i], "--pretty"))) {
 	     i++;
 #ifdef LIBXML_OUTPUT_ENABLED
-       if (argv[i] != NULL) {
-	         format = atoi(argv[i]);
+       if (my_argv[i] != NULL) {
+	         format = atoi(my_argv[i]);
 	         if (format == 1) {
 	             noblanks++;
 	             xmlKeepBlanksDefault(0);
@@ -3420,83 +3436,83 @@ main(int argc, char **argv) {
 #endif /* LIBXML_OUTPUT_ENABLED */
 	}
 #ifdef LIBXML_READER_ENABLED
-	else if ((!strcmp(argv[i], "-stream")) ||
-	         (!strcmp(argv[i], "--stream"))) {
+	else if ((!strcmp(my_argv[i], "-stream")) ||
+	         (!strcmp(my_argv[i], "--stream"))) {
 	     stream++;
 	}
-	else if ((!strcmp(argv[i], "-walker")) ||
-	         (!strcmp(argv[i], "--walker"))) {
+	else if ((!strcmp(my_argv[i], "-walker")) ||
+	         (!strcmp(my_argv[i], "--walker"))) {
 	     walker++;
              noout++;
 	}
 #endif /* LIBXML_READER_ENABLED */
 #ifdef LIBXML_SAX1_ENABLED
-	else if ((!strcmp(argv[i], "-sax1")) ||
-	         (!strcmp(argv[i], "--sax1"))) {
+	else if ((!strcmp(my_argv[i], "-sax1")) ||
+	         (!strcmp(my_argv[i], "--sax1"))) {
 	    sax1++;
 	    options |= XML_PARSE_SAX1;
 	}
 #endif /* LIBXML_SAX1_ENABLED */
-	else if ((!strcmp(argv[i], "-sax")) ||
-	         (!strcmp(argv[i], "--sax"))) {
+	else if ((!strcmp(my_argv[i], "-sax")) ||
+	         (!strcmp(my_argv[i], "--sax"))) {
 	    sax++;
 	}
-	else if ((!strcmp(argv[i], "-chkregister")) ||
-	         (!strcmp(argv[i], "--chkregister"))) {
+	else if ((!strcmp(my_argv[i], "-chkregister")) ||
+	         (!strcmp(my_argv[i], "--chkregister"))) {
 	    chkregister++;
 #ifdef LIBXML_SCHEMAS_ENABLED
-	} else if ((!strcmp(argv[i], "-relaxng")) ||
-	         (!strcmp(argv[i], "--relaxng"))) {
+	} else if ((!strcmp(my_argv[i], "-relaxng")) ||
+	         (!strcmp(my_argv[i], "--relaxng"))) {
 	    i++;
-	    relaxng = argv[i];
+	    relaxng = my_argv[i];
 	    noent++;
 	    options |= XML_PARSE_NOENT;
-	} else if ((!strcmp(argv[i], "-schema")) ||
-	         (!strcmp(argv[i], "--schema"))) {
+	} else if ((!strcmp(my_argv[i], "-schema")) ||
+	         (!strcmp(my_argv[i], "--schema"))) {
 	    i++;
-	    schema = argv[i];
+	    schema = my_argv[i];
 	    noent++;
 #endif
 #ifdef LIBXML_SCHEMATRON_ENABLED
-	} else if ((!strcmp(argv[i], "-schematron")) ||
-	         (!strcmp(argv[i], "--schematron"))) {
+	} else if ((!strcmp(my_argv[i], "-schematron")) ||
+	         (!strcmp(my_argv[i], "--schematron"))) {
 	    i++;
-	    schematron = argv[i];
+	    schematron = my_argv[i];
 	    noent++;
 #endif
-        } else if ((!strcmp(argv[i], "-nonet")) ||
-                   (!strcmp(argv[i], "--nonet"))) {
+        } else if ((!strcmp(my_argv[i], "-nonet")) ||
+                   (!strcmp(my_argv[i], "--nonet"))) {
 	    options |= XML_PARSE_NONET;
 	    xmlSetExternalEntityLoader(xmlNoNetExternalEntityLoader);
-        } else if ((!strcmp(argv[i], "-nocompact")) ||
-                   (!strcmp(argv[i], "--nocompact"))) {
+        } else if ((!strcmp(my_argv[i], "-nocompact")) ||
+                   (!strcmp(my_argv[i], "--nocompact"))) {
 	    options &= ~XML_PARSE_COMPACT;
-	} else if ((!strcmp(argv[i], "-load-trace")) ||
-	           (!strcmp(argv[i], "--load-trace"))) {
+	} else if ((!strcmp(my_argv[i], "-load-trace")) ||
+	           (!strcmp(my_argv[i], "--load-trace"))) {
 	    load_trace++;
-        } else if ((!strcmp(argv[i], "-path")) ||
-                   (!strcmp(argv[i], "--path"))) {
+        } else if ((!strcmp(my_argv[i], "-path")) ||
+                   (!strcmp(my_argv[i], "--path"))) {
 	    i++;
-	    parsePath(BAD_CAST argv[i]);
+	    parsePath(BAD_CAST my_argv[i]);
 #ifdef LIBXML_PATTERN_ENABLED
-        } else if ((!strcmp(argv[i], "-pattern")) ||
-                   (!strcmp(argv[i], "--pattern"))) {
+        } else if ((!strcmp(my_argv[i], "-pattern")) ||
+                   (!strcmp(my_argv[i], "--pattern"))) {
 	    i++;
-	    pattern = argv[i];
+	    pattern = my_argv[i];
 #endif
 #ifdef LIBXML_XPATH_ENABLED
-        } else if ((!strcmp(argv[i], "-xpath")) ||
-                   (!strcmp(argv[i], "--xpath"))) {
+        } else if ((!strcmp(my_argv[i], "-xpath")) ||
+                   (!strcmp(my_argv[i], "--xpath"))) {
 	    i++;
 	    noout++;
-	    xpathquery = argv[i];
+	    xpathquery = my_argv[i];
 #endif
-	} else if ((!strcmp(argv[i], "-oldxml10")) ||
-	           (!strcmp(argv[i], "--oldxml10"))) {
+	} else if ((!strcmp(my_argv[i], "-oldxml10")) ||
+	           (!strcmp(my_argv[i], "--oldxml10"))) {
 	    oldxml10++;
 	    options |= XML_PARSE_OLD10;
 	} else {
-	    fprintf(stderr, "Unknown option %s\n", argv[i]);
+	    fprintf(stderr, "Unknown option %s\n", my_argv[i]);
 	    usage(argv[0]);
 	    return(1);
 	}
@@ -3668,68 +3684,68 @@ main(int argc, char **argv) {
     }
 #endif /* LIBXML_PATTERN_ENABLED */
     for (i = 1; i < argc ; i++) {
-	if ((!strcmp(argv[i], "-encode")) ||
-	         (!strcmp(argv[i], "--encode"))) {
+	if ((!strcmp(my_argv[i], "-encode")) ||
+	         (!strcmp(my_argv[i], "--encode"))) {
 	    i++;
 	    continue;
-        } else if ((!strcmp(argv[i], "-o")) ||
-                   (!strcmp(argv[i], "-output")) ||
-                   (!strcmp(argv[i], "--output"))) {
+        } else if ((!strcmp(my_argv[i], "-o")) ||
+                   (!strcmp(my_argv[i], "-output")) ||
+                   (!strcmp(my_argv[i], "--output"))) {
             i++;
 	    continue;
         }
 #ifdef LIBXML_VALID_ENABLED
-	if ((!strcmp(argv[i], "-dtdvalid")) ||
-	         (!strcmp(argv[i], "--dtdvalid"))) {
+	if ((!strcmp(my_argv[i], "-dtdvalid")) ||
+	         (!strcmp(my_argv[i], "--dtdvalid"))) {
 	    i++;
 	    continue;
         }
-	if ((!strcmp(argv[i], "-path")) ||
-                   (!strcmp(argv[i], "--path"))) {
+	if ((!strcmp(my_argv[i], "-path")) ||
+                   (!strcmp(my_argv[i], "--path"))) {
             i++;
 	    continue;
         }
-	if ((!strcmp(argv[i], "-dtdvalidfpi")) ||
-	         (!strcmp(argv[i], "--dtdvalidfpi"))) {
+	if ((!strcmp(my_argv[i], "-dtdvalidfpi")) ||
+	         (!strcmp(my_argv[i], "--dtdvalidfpi"))) {
 	    i++;
 	    continue;
         }
 #endif /* LIBXML_VALID_ENABLED */
-	if ((!strcmp(argv[i], "-relaxng")) ||
-	         (!strcmp(argv[i], "--relaxng"))) {
+	if ((!strcmp(my_argv[i], "-relaxng")) ||
+	         (!strcmp(my_argv[i], "--relaxng"))) {
 	    i++;
 	    continue;
         }
-	if ((!strcmp(argv[i], "-maxmem")) ||
-	         (!strcmp(argv[i], "--maxmem"))) {
+	if ((!strcmp(my_argv[i], "-maxmem")) ||
+	         (!strcmp(my_argv[i], "--maxmem"))) {
 	    i++;
 	    continue;
         }
-	if ((!strcmp(argv[i], "-pretty")) ||
-	         (!strcmp(argv[i], "--pretty"))) {
+	if ((!strcmp(my_argv[i], "-pretty")) ||
+	         (!strcmp(my_argv[i], "--pretty"))) {
 	    i++;
 	    continue;
         }
-	if ((!strcmp(argv[i], "-schema")) ||
-	         (!strcmp(argv[i], "--schema"))) {
+	if ((!strcmp(my_argv[i], "-schema")) ||
+	         (!strcmp(my_argv[i], "--schema"))) {
 	    i++;
 	    continue;
         }
-	if ((!strcmp(argv[i], "-schematron")) ||
-	         (!strcmp(argv[i], "--schematron"))) {
+	if ((!strcmp(my_argv[i], "-schematron")) ||
+	         (!strcmp(my_argv[i], "--schematron"))) {
 	    i++;
 	    continue;
         }
 #ifdef LIBXML_PATTERN_ENABLED
-        if ((!strcmp(argv[i], "-pattern")) ||
-	    (!strcmp(argv[i], "--pattern"))) {
+        if ((!strcmp(my_argv[i], "-pattern")) ||
+	    (!strcmp(my_argv[i], "--pattern"))) {
 	    i++;
 	    continue;
 	}
 #endif
 #ifdef LIBXML_XPATH_ENABLED
-        if ((!strcmp(argv[i], "-xpath")) ||
-	    (!strcmp(argv[i], "--xpath"))) {
+        if ((!strcmp(my_argv[i], "-xpath")) ||
+	    (!strcmp(my_argv[i], "--xpath"))) {
 	    i++;
 	    continue;
 	}
@@ -3737,22 +3753,22 @@ main(int argc, char **argv) {
 	if ((timing) && (repeat))
 	    startTimer();
 	/* Remember file names.  "-" means stdin.  <sven@zen.org> */
-	if ((argv[i][0] != '-') || (strcmp(argv[i], "-") == 0)) {
+	if ((my_argv[i][0] != '-') || (strcmp(my_argv[i], "-") == 0)) {
 	    if (repeat) {
 		xmlParserCtxtPtr ctxt = NULL;
 
 		for (acount = 0;acount < repeat;acount++) {
 #ifdef LIBXML_READER_ENABLED
 		    if (stream != 0) {
-			streamFile(argv[i]);
+			streamFile(my_argv[i]);
 		    } else {
 #endif /* LIBXML_READER_ENABLED */
                         if (sax) {
-			    testSAX(argv[i]);
+			    testSAX(my_argv[i]);
 			} else {
 			    if (ctxt == NULL)
 				ctxt = xmlNewParserCtxt();
-			    parseAndPrintFile(argv[i], ctxt);
+			    // parseAndPrintFile(my_argv[i], ctxt);
 			}
 #ifdef LIBXML_READER_ENABLED
 		    }
@@ -3765,13 +3781,13 @@ main(int argc, char **argv) {
 
 #ifdef LIBXML_READER_ENABLED
 		if (stream != 0)
-		    streamFile(argv[i]);
+		    streamFile(my_argv[i]);
 		else
 #endif /* LIBXML_READER_ENABLED */
                 if (sax) {
-		    testSAX(argv[i]);
+		    testSAX(my_argv[i]);
 		} else {
-		    parseAndPrintFile(argv[i], NULL);
+		    // parseAndPrintFile(my_argv[i], NULL);
 		}
 
                 if ((chkregister) && (nbregister != 0)) {
@@ -3786,7 +3802,7 @@ main(int argc, char **argv) {
 	}
     }
     if (generate)
-	parseAndPrintFile(NULL, NULL);
+	// parseAndPrintFile(NULL, NULL);
     if ((htmlout) && (!nowrap)) {
 	xmlGenericError(xmlGenericErrorContext, "</body></html>\n");
     }

@@ -100,7 +100,7 @@ static SpecialFunctionHandler::HandlerInfo handlerInfo[] = {
   add("strstr",                      handleStrstr,                    true),
   add("strrchr",                     handleStrrchr,                   true),
   add("strcmp",                      handleStrcmp,                    true),
-  add("myStrncmp",                   handleStrncmp,                   true),
+  add("strncmp",                     handleStrncmp,                   true),
   add("strncasecmp",                 handleStrncasecmp,               true),
   add("myStrcspn",                   handleStrcspn,                   true),
   add("strlen",                      handleStrlen,                    true),
