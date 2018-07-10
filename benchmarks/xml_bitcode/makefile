@@ -1,7 +1,7 @@
 ###############
 # DIRECTORIES #
 ###############
-KLEE_ROOT_DIR  = /home/oren/GIT/klee/vanilla.klee
+KLEE_ROOT_DIR  = /home/oren/GIT/klee/str.klee
 KLEE_SRC_DIR   = ${KLEE_ROOT_DIR}/klee
 KLEE_BUILD_DIR = ${KLEE_ROOT_DIR}/build
 
@@ -74,22 +74,24 @@ compile_and_run:
 	@echo "*                                           *"
 	@echo "*********************************************"
 	@setterm -term linux -fore white
-	#--posix-runtime                                 \
-	#-constants-as-ABs                               \
-	#-use-query-log=all:kquery                                  \
-	#-use-query-log=solver:smt2                      \
-	# gdb -x ./myGdbScripts/gdbCommands.txt --args    \
+	#--posix-runtime                                     \
+	#--sym-args 4 4 32                                   \
+	#-constants-as-ABs                                   \
+	#--libc=uclibc                                       \
+	#-use-query-log=all:kquery                           \
+	#-use-query-log=solver:smt2                          \
+	# gdb -x ./myGdbScripts/gdbCommands.txt --args       \
 	${KLEE}                                              \
-	--libc=uclibc                                        \
-	--posix-runtime                                      \
 	-solver-backend=z3                                   \
+	--posix-runtime                                      \
+	-constants-as-ABs                                    \
+	--libc=uclibc                                        \
 	-use-independent-solver=0                            \
 	-use-cex-cache=0                                     \
 	-use-query-log=solver:kquery                         \
 	-debug-z3-dump-queries=Z3queries.txt                 \
 	-debug-z3-log-api-interaction=Z3LogAPI.txt           \
-	${PROGRAM_PATH}/${PROGRAM_NAME}_no_dbg_with_names.bc \
-	--sym-args 4 4 32
+	${PROGRAM_PATH}/${PROGRAM_NAME}_no_dbg_with_names.bc
 	@setterm -term linux -fore blue
 	@echo "******************************************"
 	@echo "*                                        *"
