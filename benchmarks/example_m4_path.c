@@ -23,12 +23,15 @@
 
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <error.h>
+char * xstrrchr(const char *, char);
 
+void markString(char *p) {}
 typedef struct m4__search_path m4__search_path;
 typedef struct m4__search_path_info m4__search_path_info;
 #define m4__get_search_path(C)                  ((C)->search_path)
@@ -98,6 +101,7 @@ static const char *FILE_SUFFIXES[] = {
 
 static const char *NO_SUFFIXES[] = { "", NULL };
 
+
 static void
 search_path_add (m4__search_path_info *info, const char *dir, bool prepend)
 {
@@ -162,7 +166,7 @@ path_truncate (char *path)
     }
 
   char *end = strchr (beg, '.');	/* first period */
-  char *ext = strrchr (beg, '.');	/* last period */
+  char *ext = xstrrchr (beg, '.');	/* last period */
 
   size_t len = (size_t) (end - beg);	/* length of filename element */
   if (len > 8)
@@ -184,9 +188,10 @@ char* file_name_concat (char const *dir, char const *abase, char **base_in_resul
     int dir_len = strlen(dir);
     int abase_len = strlen(abase);
     char* result = malloc(dir_len + abase_len + 1);
+    markString(result);
     result[dir_len + abase_len] = '\0';
     strcpy(result, dir);
-    strcpy(result + dir_len, abase_len);
+    strcpy(result + dir_len, abase);
     return result;
 }
 
@@ -232,6 +237,7 @@ m4_path_search (m4 *context, const char *filename, const char **suffixes)
 
       /* Try appending each of the suffixes we were given.  */
       filepath = strncpy (malloc (mem + max_suffix_len +1), filename, mem +1);
+      printf("Here!!!!\n");
       filepath = path_truncate (filepath);
       mem = strlen (filepath); /* recalculate length after truncation */
 
@@ -285,18 +291,19 @@ m4_path_search (m4 *context, const char *filename, const char **suffixes)
   return NULL;
 }
 
-void markString(char *p) {}
 
-static m4__search_path sp;
+static m4__search_path_info sp_info;
 int main(int argc, char** argv) {
   m4 context;
-  context.search_path = &sp;
+  context.search_path = &sp_info;
 
   char search_path[30];
   klee_make_symbolic(search_path, sizeof(search_path), "search_path");
   markString(search_path);
+      printf("Start@!!!!\n");
 
-  search_path_env_init (context.search_path, search_path, false);
+//  search_path_env_init (context.search_path, search_path, false);
+  search_path_add(context.search_path, "blarp", false);
 
   printf("[1] Added search path!");
   char str[30];
