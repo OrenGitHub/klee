@@ -180,7 +180,15 @@ path_truncate (char *path)
   return path;
 }
 
-
+char* file_name_concat (char const *dir, char const *abase, char **base_in_result) {
+    int dir_len = strlen(dir);
+    int abase_len = strlen(abase);
+    char* result = malloc(dir_len + abase_len + 1);
+    result[dir_len + abase_len] = '\0';
+    strcpy(result, dir);
+    strcpy(result + dir_len, abase_len);
+    return result;
+}
 
 
 /* Search for FILENAME according to -B options, `.', -I options, then
@@ -245,7 +253,7 @@ m4_path_search (m4 *context, const char *filename, const char **suffixes)
   for (incl = m4__get_search_path (context)->list;
        incl != NULL; incl = incl->next)
     {
-      char *pathname = strstr(incl->dir, filename);
+      char *pathname = file_name_concat (incl->dir, filename, NULL);
       size_t mem = strlen (pathname);
 
 
