@@ -105,6 +105,7 @@ static SpecialFunctionHandler::HandlerInfo handlerInfo[] = {
   add("myStrcspn",                   handleStrcspn,                   true),
   add("strlen",                      handleStrlen,                    true),
   add("strnlen",                     handleStrnlen,                   true),
+  add("strdup",                     handleStrdup,                   true),
   add("f6",                          handle_da_loop_killer_f6,        true),
   add("f5",                          handle_da_loop_killer_f5,        true),
   add("f4",                          handle_da_loop_killer_f4,        true),
@@ -182,6 +183,7 @@ SpecialFunctionHandler::const_iterator& SpecialFunctionHandler::const_iterator::
 
   return *this;
 }
+static int numABSerials = 0;
 
 int SpecialFunctionHandler::size() {
 	return sizeof(handlerInfo)/sizeof(handlerInfo[0]);
@@ -718,13 +720,37 @@ void SpecialFunctionHandler::handleStrnlen(
 		*legal_access,
 		m.first);
 }
+void SpecialFunctionHandler::handleStrdup(
+	ExecutionState &state,
+	KInstruction *target,
+	std::vector<ref<Expr> > &arguments)
+{  
+  assert(arguments.size() == 1 && "strdup only accept sone pointer");
+  
+  ObjectPair op = executor.resolveOne(state,arguments[0]);
 
+  const MemoryObject *src_mo = op.first;
+  const ObjectState* src_os = op.second;
+  MemoryObject *mo =
+        executor.memory->allocate(src_mo->size,false , /*isGlobal=*/false, target->inst,
+                                  executor.getAllocationAlignment(target->inst));
+  ObjectState *os = executor.bindObjectInState(state, mo, false);
+  os->serial = ++numABSerials;
+  os->version = 0;
+  
+  state.addConstraint(StrEqExpr::create(
+    StrVarExpr::create(os->getABSerial()),
+    StrVarExpr::create(src_os->getABSerial())));
+  executor.bindLocal(target,state,mo->getBaseExpr());
+
+
+}
 void SpecialFunctionHandler::handleStrlen(
 	ExecutionState &state,
 	KInstruction *target,
 	std::vector<ref<Expr> > &arguments)
 {
-//  state.dumpStack(errs());
+  state.dumpStack(errs());
   assert(arguments.size() == 1 && "Strlen can only have 1 argument");
   StrModel m = stringModel.modelStrlen(
                       executor.resolveOne(state,arguments[0]).second, 
@@ -973,7 +999,6 @@ void SpecialFunctionHandler::handleMyPrintOutput(
   }
 }
 
-static int numABSerials = 0;
 
 void SpecialFunctionHandler::handleMarkString(
 	ExecutionState &state,
