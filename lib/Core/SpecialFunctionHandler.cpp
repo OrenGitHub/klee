@@ -96,6 +96,7 @@ static SpecialFunctionHandler::HandlerInfo handlerInfo[] = {
   add("strcpy",                      handleStrcpy,                    false),
   add("strncpy",                     handleStrncpy,                   false),
   add("strchr",                      handleStrchr,                    true),
+  add("strpbrk",                     handleStrpbrk,                    true),
   add("strstr",                      handleStrstr,                    true),
   add("strrchr",                     handleStrrchr,                   true),
   add("strcmp",                      handleStrcmp,                    true),
@@ -104,6 +105,7 @@ static SpecialFunctionHandler::HandlerInfo handlerInfo[] = {
   add("myStrcspn",                   handleStrcspn,                   true),
   add("strlen",                      handleStrlen,                    true),
   add("strnlen",                     handleStrnlen,                   true),
+  add("strdup",                     handleStrdup,                   true),
   add("f6",                          handle_da_loop_killer_f6,        true),
   add("f5",                          handle_da_loop_killer_f5,        true),
   add("f4",                          handle_da_loop_killer_f4,        true),
@@ -181,6 +183,7 @@ SpecialFunctionHandler::const_iterator& SpecialFunctionHandler::const_iterator::
 
   return *this;
 }
+static int numABSerials = 0;
 
 int SpecialFunctionHandler::size() {
 	return sizeof(handlerInfo)/sizeof(handlerInfo[0]);
@@ -717,13 +720,37 @@ void SpecialFunctionHandler::handleStrnlen(
 		*legal_access,
 		m.first);
 }
+void SpecialFunctionHandler::handleStrdup(
+	ExecutionState &state,
+	KInstruction *target,
+	std::vector<ref<Expr> > &arguments)
+{  
+  assert(arguments.size() == 1 && "strdup only accept sone pointer");
+  
+  ObjectPair op = executor.resolveOne(state,arguments[0]);
 
+  const MemoryObject *src_mo = op.first;
+  const ObjectState* src_os = op.second;
+  MemoryObject *mo =
+        executor.memory->allocate(src_mo->size,false , /*isGlobal=*/false, target->inst,
+                                  executor.getAllocationAlignment(target->inst));
+  ObjectState *os = executor.bindObjectInState(state, mo, false);
+  os->serial = ++numABSerials;
+  os->version = 0;
+  
+  state.addConstraint(StrEqExpr::create(
+    StrVarExpr::create(os->getABSerial()),
+    StrVarExpr::create(src_os->getABSerial())));
+  executor.bindLocal(target,state,mo->getBaseExpr());
+
+
+}
 void SpecialFunctionHandler::handleStrlen(
 	ExecutionState &state,
 	KInstruction *target,
 	std::vector<ref<Expr> > &arguments)
 {
-//  state.dumpStack(errs());
+  state.dumpStack(errs());
   assert(arguments.size() == 1 && "Strlen can only have 1 argument");
   StrModel m = stringModel.modelStrlen(
                       executor.resolveOne(state,arguments[0]).second, 
@@ -972,7 +999,6 @@ void SpecialFunctionHandler::handleMyPrintOutput(
   }
 }
 
-static int numABSerials = 0;
 
 void SpecialFunctionHandler::handleMarkString(
 	ExecutionState &state,
@@ -1219,7 +1245,7 @@ void SpecialFunctionHandler::handleStrstr(
 	KInstruction *target,
 	std::vector<ref<Expr> > &arguments)
 {
-	bool isOnlyCompare = true;
+//	bool isOnlyCompare = true;
 	// errs() << "Uses of strstr: \n";
 	//for(auto i = target->inst->use_begin(); i != target->inst->use_end(); i++)
 	//{
@@ -1311,6 +1337,30 @@ void SpecialFunctionHandler::handleStrchr(
                       executor.resolveOne(state,arguments[0]).second, 
                       arguments[0],
                       arguments[1]);
+
+  Executor::StatePair branches = executor.fork(state, m.second, true);
+  ExecutionState *valid_access = branches.first;
+  ExecutionState *invalid_access= branches.second;
+  if(invalid_access) {
+      executor.terminateStateOnError(*invalid_access, 
+          "Strchr has out of bounds behaviour", Executor::Ptr);
+  }
+
+  executor.bindLocal(target,*valid_access, m.first);
+}
+
+void SpecialFunctionHandler::handleStrpbrk(
+	ExecutionState &state,
+	KInstruction *target,
+	std::vector<ref<Expr> > &arguments)
+{
+ 
+  StrModel m = stringModel.modelStrpbrk(
+                      executor.resolveOne(state,arguments[0]).second, 
+                      arguments[0],
+                      executor.resolveOne(state,arguments[1]).second, 
+                      arguments[1],
+                      state);
 
   Executor::StatePair branches = executor.fork(state, m.second, true);
   ExecutionState *valid_access = branches.first;
