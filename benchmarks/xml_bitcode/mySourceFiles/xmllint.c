@@ -3149,6 +3149,11 @@ main(int argc, char **argv) {
     my_argv[2] = malloc(32);
     my_argv[3] = malloc(32);
 
+    klee_make_symbolic(my_argv[0],32,"my_argv0");
+    klee_make_symbolic(my_argv[1],32,"my_argv1");
+    klee_make_symbolic(my_argv[2],32,"my_argv2");
+    klee_make_symbolic(my_argv[3],32,"my_argv3");
+
     markString(my_argv[0]);
     markString(my_argv[1]);
     markString(my_argv[2]);
@@ -3159,8 +3164,7 @@ main(int argc, char **argv) {
 	return(1);
     }
     
-	assert(0);
-    LIBXML_TEST_VERSION
+    // LIBXML_TEST_VERSION
     for (i = 1; i < argc ; i++) {
 	if (!strcmp(my_argv[i], "-"))
 	    break;
@@ -3169,7 +3173,6 @@ main(int argc, char **argv) {
 	    continue;
 	if ((!strcmp(my_argv[i], "-debug")) || (!strcmp(my_argv[i], "--debug")))
 	{
-		assert(0);
 	    debug++;
 	}
 	else
@@ -3205,7 +3208,6 @@ main(int argc, char **argv) {
 	    options |= XML_PARSE_NSCLEAN;
 	} else if ((!strcmp(my_argv[i], "-nocdata")) ||
 	         (!strcmp(my_argv[i], "--nocdata"))) {
-	    assert(0);
 	    options |= XML_PARSE_NOCDATA;
 	} else if ((!strcmp(my_argv[i], "-nodict")) ||
 	         (!strcmp(my_argv[i], "--nodict"))) {
@@ -3213,6 +3215,7 @@ main(int argc, char **argv) {
 	} else if ((!strcmp(my_argv[i], "-version")) ||
 	         (!strcmp(my_argv[i], "--version"))) {
 	    // showVersion(argv[0]);
+	    assert(0);
 	    version = 1;
 	} else if ((!strcmp(my_argv[i], "-noout")) ||
 	         (!strcmp(my_argv[i], "--noout")))

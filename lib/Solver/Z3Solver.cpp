@@ -114,7 +114,7 @@ Z3SolverImpl::Z3SolverImpl()
     klee_message("Dumping Z3 queries to \"%s\"", Z3QueryDumpFile.c_str());
   }
 
-  // Z3_global_param_set("smt.string_solver", "z3str3");
+//   Z3_global_param_set("smt.string_solver", "z3str3");
 
   // Set verbosity
   if (Z3VerbosityLevel > 0) {
@@ -124,6 +124,7 @@ Z3SolverImpl::Z3SolverImpl()
     ss.flush();
     Z3_global_param_set("verbose", underlyingString.c_str());
   }
+//  Z3_global_param_set("smt.string_solver", "z3str3");
 }
 
 Z3SolverImpl::~Z3SolverImpl() {
@@ -401,12 +402,12 @@ SolverImpl::SolverRunStatus Z3SolverImpl::handleSolverResponse(
         std::string str(c);
 //        llvm::errs() << "str: " << str << "\n";
         std::vector<unsigned char> data(str.begin(), str.end());
-    //    llvm::errs() << array->name << " size: " << data.size() << " is: ";
-    //    for (unsigned oren = 0;oren<data.size();oren++)
-    //    {
-    //    	llvm::errs() << data[oren];
-    //    }
-    //    llvm::errs() << "END\n";
+//        llvm::errs() << array->name << " size: " << data.size() << " is: ";
+//        for (unsigned oren = 0;oren<data.size();oren++)
+//        {
+//        	llvm::errs() << data[oren];
+//        }
+//        llvm::errs() << "END\n";
         values->push_back(data);
         Z3_dec_ref(builder->ctx, out);
 
