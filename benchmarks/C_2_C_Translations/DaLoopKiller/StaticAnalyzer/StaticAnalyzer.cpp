@@ -5,6 +5,7 @@
 #include "llvm/IR/Function.h"
 #include "llvm/IR/DebugInfo.h"
 #include "llvm/IR/Constants.h"
+#include "llvm/Analysis/AliasAnalysis.h"
 #include "llvm/Analysis/LoopPass.h"
 #include "llvm/Analysis/LoopInfo.h"
 #include "llvm/Support/raw_ostream.h"
@@ -39,6 +40,18 @@ struct StaticAnalyzer : public LoopPass
 {
 	static char ID;
 	StaticAnalyzer():LoopPass(ID){}
+
+    void getAnalysisUsage(AnalysisUsage &AU) const override
+    {
+		//AU.setPreservesCFG();
+		//AU.addRequired<DominatorTreeWrapperPass>();
+		AU.addRequired<AAResultsWrapperPass>();
+		//AU.addRequired<MemoryDependenceAnalysis>();
+		//AU.addRequired<TargetLibraryInfoWrapperPass>();
+		//AU.addPreserved<DominatorTreeWrapperPass>();
+		//AU.addPreserved<GlobalsAAWrapperPass>();
+		//AU.addPreserved<MemoryDependenceAnalysis>();
+	}
 
 	void PrintLoopLocation(Loop *loop)
 	{
@@ -136,10 +149,25 @@ struct StaticAnalyzer : public LoopPass
 		/***************************************/
 		/* [2] Print a synthesized loop header */
 		/***************************************/
-		myfile << "\nBasic Block ( header )\n\n";
-		myfile << "    i0(int)    = 0(int)\n";
-		myfile << "    i (int)    = 0(int)\n";
-		myfile << "    s0(char *) = s.addr(char *)\n";
+		BasicBlock *init = nullptr;
+		for (auto	BB  = (*(loop->block_begin()))->getParent()->begin();
+					BB != (*(loop->block_begin()))->getParent()->end();
+					BB++)
+		{
+			if ((BB->getSingleSuccessor() == (*(loop->block_begin()))) &&
+				(BasicBlockBelongsToLoop(&(*BB),loop) == false))
+			{
+				init = &(*BB);
+			}
+		}
+		myfile << "\nBasic Block ( ";
+		myfile << init->getName().str();
+		myfile << " )\n\n";
+		std::map<std::string,std::string> cache;
+		for (auto inst = init->begin(); inst != init->end(); inst++)
+		{				
+			PrintInstruction((Instruction *) inst,myfile,cache);
+		}		
 	}
 
 	void PrintLoopFooter(Loop *loop,std::ofstream &myfile)
@@ -189,7 +217,8 @@ struct StaticAnalyzer : public LoopPass
 					PointerType *p2 = (PointerType *) p1->getElementType();
 					if (p2->getElementType()->isIntegerTy(8))
 					{
-						external_svars.insert(v->getName().str());
+						external_svars.insert(v);
+						// external_svars.insert(v->getName().str());
 					}
 				}
 				else if (p1->getElementType()->isIntegerTy(8))
@@ -351,7 +380,20 @@ struct StaticAnalyzer : public LoopPass
 		/* [3] Extract the second operand */
 		/**********************************/
 		auto operand1 = i->getOperand(1);
-		std::string operand1Str;
+		std::string operand1Str = operand1->getName().str();
+
+		if (AA->isNoAlias(operand0,operand1))
+		{
+			errs() << "\n\n\n";
+			errs() << operand0->getName() << " and " << operand1Str << " are NOT aliased\n";
+			errs() << "\n\n\n";
+		}
+		else
+		{
+			errs() << "\n\n\n";
+			errs() << operand0->getName() << " and " << operand1Str << " are aliased\n";
+			errs() << "\n\n\n";
+		}
 
 		/****************************/
 		/* [4] Extract the operator */
@@ -431,11 +473,11 @@ struct StaticAnalyzer : public LoopPass
 		/****************************************/
 		/* [3] Print formatted Sext instruction */
 		/****************************************/
-		//myfile << "    " ;
-		//myfile <<   dst  ;
-		//myfile <<  " = " ;
-		//myfile << CacheName(operand,cache);
-		//myfile <<   "\n" ;
+		myfile << "    " ;
+		myfile <<   dst  ;
+		myfile <<  " = " ;
+		myfile << operand;
+		myfile <<   "\n" ;
 
 		/******************************/
 		/* [4] Cache Sect instruction */
@@ -474,10 +516,58 @@ struct StaticAnalyzer : public LoopPass
 		myfile << "    "   ;
 		myfile << dst      ;
 		myfile << " = "    ;
-		myfile << CacheName(operand1,cache) ;
+		myfile << operand1 ;
 		myfile << " + "    ;
-		myfile << CacheName(operand2,cache) ;
+		myfile << operand2 ;
 		myfile << "\n"     ;
+	}
+
+	void Print_Trunc(TruncInst *i,std::ofstream &myfile,std::map<std::string,std::string> &cache)
+	{
+		/****************************/
+		/* [1] Extract the dst name */
+		/****************************/
+		std::string dst = i->getName().str();
+
+		/********************************/
+		/* [2] Extract the operand name */
+		/********************************/
+		std::string operand = Value2String(i->getOperand(0));
+
+		/*****************************************/
+		/* [3] Print formatted Trunc instruction */
+		/*****************************************/
+		myfile << "    "  ;
+		myfile << dst     ;
+		myfile << " = "   ;
+		myfile << operand ;
+		myfile << "\n"    ;
+	}
+
+	void Print_Call(CallInst *i,std::ofstream &myfile,std::map<std::string,std::string> &cache)
+	{
+		/****************************/
+		/* [1] Extract the dst name */
+		/****************************/
+		std::string dst = i->getName().str();
+
+		/********************************/
+		/* [2] Extract the operand name */
+		/********************************/
+		std::string operand = Value2String(i->getOperand(0));
+		std::string calledFunctionName = i->getCalledFunction()->getName().str();
+
+		/*****************************************/
+		/* [3] Print formatted Trunc instruction */
+		/*****************************************/
+		myfile << "    "            ;
+		myfile << dst               ;
+		myfile << " = "             ;
+		myfile << calledFunctionName;
+		myfile << "( "              ;
+		myfile << operand           ;
+		myfile << " )"              ;
+		myfile << "\n"              ;
 	}
 	
 	void PrintInstruction(Instruction *i,std::ofstream &myfile,std::map<std::string,std::string> &cache)
@@ -497,6 +587,8 @@ struct StaticAnalyzer : public LoopPass
 		if ( strncmp( opcode,"icmp",          4) == 0) Print_Icmp(  (CmpInst           *) i,myfile,cache );	
 		if ( strncmp( opcode,"br",            2) == 0) Print_Br(    (BranchInst        *) i,myfile,cache );	
 		if ( strncmp( opcode,"add",           3) == 0) Print_Add(   (BinaryOperator    *) i,myfile,cache );	
+		if ( strncmp( opcode,"trunc",         5) == 0) Print_Trunc( (TruncInst         *) i,myfile,cache );	
+		if ( strncmp( opcode,"call",          4) == 0) Print_Call(  (CallInst          *) i,myfile,cache );	
 	}
 
 #if 0
@@ -527,8 +619,6 @@ struct StaticAnalyzer : public LoopPass
 		static int intSerial=0;
 		std::string operand;
 		int numNonEscapingVars=0;
-		std::set<std::string> temps;
-		std::set<std::string> hooznikim;
 
 		/**********************************/
 		/* [0] Open file for loop summary */
@@ -592,13 +682,15 @@ struct StaticAnalyzer : public LoopPass
 		return false;
 	}
 
+	AliasAnalysis *AA;
+
 	std::set<std::string> temps;
 
 	std::set<std::string> internal_svars;
 	std::set<std::string> internal_ivars;
 	std::set<std::string> internal_cvars;
 
-	std::set<std::string> external_svars;
+	std::set<Value *> external_svars;
 	std::set<std::string> external_ivars;
 	std::set<std::string> external_cvars;
 
@@ -620,7 +712,38 @@ struct StaticAnalyzer : public LoopPass
 	}
 
 	virtual bool runOnLoop(Loop *loop, LPPassManager &LPM)
-	{
+	{		
+		AA = &getAnalysis<AAResultsWrapperPass>().getAAResults();
+	
+#if 0		
+		for (auto it = loop->block_begin(); it != loop->block_end(); it++)
+		{
+			for (auto inst = (*it)->begin(); inst != (*it)->end(); inst++)
+			{
+				Instruction *i = (Instruction *) inst;
+				if (strncmp(i->getOpcodeName(),"icmp",4) == 0)
+				{
+					CmpInst *ci = (CmpInst *) i;
+					if (AA->isNoAlias(
+						ci->getOperand(0),
+						ci->getOperand(1)))
+					{
+						errs() << ci->getOperand(0)->getName().str();
+						errs() << " and ";
+						errs() << ci->getOperand(1)->getName().str();
+						errs() << " are NOT aliases\n";
+					}
+					else
+					{
+						errs() << ci->getOperand(0)->getName().str();
+						errs() << " and ";
+						errs() << ci->getOperand(1)->getName().str();
+						errs() << " are aliases of one another\n";
+					}
+				}
+			}
+		}
+#endif		
 		temps.clear();
 		
 		/*********************************************/
@@ -646,12 +769,24 @@ struct StaticAnalyzer : public LoopPass
 		/*************************************/
 		/* [5] Print participating variables */
 		/*************************************/
-		errs() << "external svars:\n"; for (auto external_svar : external_svars) { errs() << external_svar << "\n"; }
+		errs() << "external svars:\n"; for (auto external_svar : external_svars) { errs() << external_svar->getName().str() << "\n"; }
 		errs() << "external ivars:\n"; for (auto external_ivar : external_ivars) { errs() << external_ivar << "\n"; }
 		errs() << "external cvars:\n"; for (auto external_cvar : external_cvars) { errs() << external_cvar << "\n"; }
-		errs() << "internal svars:\n"; for (auto internal_svar : internal_svars) { errs() << internal_svar << "\n"; }
-		errs() << "internal ivars:\n"; for (auto internal_ivar : internal_ivars) { errs() << internal_ivar << "\n"; }
-		errs() << "internal cvars:\n"; for (auto internal_cvar : internal_cvars) { errs() << internal_cvar << "\n"; }
+
+		for (auto v1 : external_svars)
+		{
+			for (auto v2 : external_svars)
+			{
+				if (v1 != v2)
+				{
+					if (AA->isNoAlias(v1,v2))
+					{
+						errs() << v1->getName().str() << " and " << v2->getName().str();
+						errs() << " are *NOT* aliases of one another\n";
+					}
+				}	
+			}
+		}
 
 		/****************************/
 		/* [4] Did the loop change? */
