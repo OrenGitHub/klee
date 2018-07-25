@@ -4,18 +4,24 @@
 /****************************/
 /* INCLUDE FILES :: PROJECT */
 /****************************/
-#include "AbstractState.h"
+#include "CFG_Node.h"
 
 /*******************/
 /* NAMESPACE ::std */
 /*******************/
 using namespace std;
 
+/*********************/
+/* NAMESPACE :: llvm */
+/*********************/
+using namespace llvm;
+
 class CFG_Node_Assign_Int : public CFG_Node {
 public:
+	CFG_Node_Assign_Int(Instruction *in_i){ i = in_i; }
 	virtual void Transform()
 	{
-		readinfo[dst] = make_tuple(src,sigma.contains[src,
+		//readinfo[dst] = make_tuple(src,sigma.contains[src,
 	}
 };
 

@@ -1,10 +1,10 @@
-#ifndef __CFG_NODE_READ_H__
-#define __CFG_NODE_READ_H__
+#ifndef __CFG_NODE_WRITE_H__
+#define __CFG_NODE_WRITE_H__
 
 /****************************/
 /* INCLUDE FILES :: PROJECT */
 /****************************/
-#include "AbstractState.h"
+#include "CFG_Node.h"
 
 /*******************/
 /* NAMESPACE ::std */
@@ -15,7 +15,7 @@ class CFG_Node_Write : public CFG_Node {
 public:
 	virtual void Transform()
 	{
-		readinfo[dst] = make_tuple(src,sigma.contains[src,
+		//readinfo[dst] = make_tuple(src,sigma.contains[src,
 	}
 };
 

@@ -28,6 +28,10 @@
 /****************************/
 #include "CFG.h"
 #include "CFG_Node.h"
+#include "CFG_Node_Read.h"
+#include "CFG_Node_Write.h"
+#include "CFG_Node_Assign_Int.h"
+#include "CFG_Node_Assign_Str.h"
 
 /**********************/
 /* USING NAMESPACE(S) */
@@ -297,6 +301,9 @@ struct StaticAnalyzer : public LoopPass
 			myfile <<  " ]"  ;
 			myfile <<  "\n"  ;
 			cache[dst] = std::string("[ ") + operand + std::string(" ]");
+			
+			CFG_Node_Read *node = new CFG_Node_Read(i);
+			cfg.nodes.insert(node);
 		}
 		else
 		{
@@ -305,6 +312,17 @@ struct StaticAnalyzer : public LoopPass
 			myfile << " = "  ;
 			myfile << operand;
 			myfile <<  "\n"  ;
+
+			if (i->getType()->isIntegerTy(32))
+			{
+				CFG_Node_Assign_Int *node = new CFG_Node_Assign_Int(i);
+				cfg.nodes.insert(node);
+			}
+			if (i->getType()->isIntegerTy(64))
+			{
+				CFG_Node_Assign_Int *node = new CFG_Node_Assign_Int(i);
+				cfg.nodes.insert(node);
+			}
 		}
 	}
 
@@ -706,13 +724,13 @@ struct StaticAnalyzer : public LoopPass
 		/*****************/
 		myfile.close();
 
-		CFG<CFG_Node> cfg;
-
 		/*******************/
 		/* [10] return ... */
 		/*******************/
 		return false;
 	}
+	
+	CFG<CFG_Node> cfg;
 
 	AliasAnalysis *AA;
 
@@ -746,36 +764,6 @@ struct StaticAnalyzer : public LoopPass
 	virtual bool runOnLoop(Loop *loop, LPPassManager &LPM)
 	{		
 		AA = &getAnalysis<AAResultsWrapperPass>().getAAResults();
-	
-#if 0		
-		for (auto it = loop->block_begin(); it != loop->block_end(); it++)
-		{
-			for (auto inst = (*it)->begin(); inst != (*it)->end(); inst++)
-			{
-				Instruction *i = (Instruction *) inst;
-				if (strncmp(i->getOpcodeName(),"icmp",4) == 0)
-				{
-					CmpInst *ci = (CmpInst *) i;
-					if (AA->isNoAlias(
-						ci->getOperand(0),
-						ci->getOperand(1)))
-					{
-						errs() << ci->getOperand(0)->getName().str();
-						errs() << " and ";
-						errs() << ci->getOperand(1)->getName().str();
-						errs() << " are NOT aliases\n";
-					}
-					else
-					{
-						errs() << ci->getOperand(0)->getName().str();
-						errs() << " and ";
-						errs() << ci->getOperand(1)->getName().str();
-						errs() << " are aliases of one another\n";
-					}
-				}
-			}
-		}
-#endif		
 		temps.clear();
 		
 		/*********************************************/

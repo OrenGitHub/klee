@@ -1,21 +1,26 @@
-#ifndef __CFG_NODE_READ_H__
-#define __CFG_NODE_READ_H__
+#ifndef __CFG_NODE_ASSIGN_STR_H__
+#define __CFG_NODE_ASSIGN_STR_H__
 
 /****************************/
 /* INCLUDE FILES :: PROJECT */
 /****************************/
-#include "AbstractState.h"
+#include "CFG_Node.h"
 
 /*******************/
 /* NAMESPACE ::std */
 /*******************/
 using namespace std;
 
-class CFG_Node_Write : public CFG_Node {
+/*******************/
+/* NAMESPACE ::std */
+/*******************/
+using namespace llvm;
+
+class CFG_Node_Assign_Str : public CFG_Node {
 public:
 	virtual void Transform()
 	{
-		readinfo[dst] = make_tuple(src,sigma.contains[src,
+		//readinfo[dst] = make_tuple(src,sigma.contains[src,
 	}
 };
 

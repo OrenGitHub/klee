@@ -11,6 +11,11 @@
 /*******************/
 using namespace std;
 
+/*******************/
+/* NAMESPACE ::std */
+/*******************/
+using namespace llvm;
+
 class CFG_Node {
 public:
 
@@ -60,6 +65,8 @@ public:
 
 public:
 
+	Instruction *i;
+
 	/***********************************/
 	/* Abstract state "before" = sigma */
 	/***********************************/
@@ -79,14 +86,6 @@ public:
 	/* predecessor ingoing edges */
 	/*****************************/
 	std::set<CFG_Node *> preds;
-};
-
-class CFG_Node_Read : public CFG_Node {
-public:
-	virtual void Transform()
-	{
-		//readinfo[dst] = make_tuple(src,sigma.contains[src,
-	}
 };
 
 #endif
