@@ -23,6 +23,12 @@
 #include <iostream>
 #include <fstream>
 
+/****************************/
+/* INCLUDE FILES :: PROJECT */
+/****************************/
+#include "CFG.h"
+#include "CFG_Node.h"
+
 /**********************/
 /* USING NAMESPACE(S) */
 /**********************/
@@ -40,6 +46,7 @@ struct StaticAnalyzer : public LoopPass
 {
 	static char ID;
 	StaticAnalyzer():LoopPass(ID){}
+	BasicBlock *end = nullptr;
 
     void getAnalysisUsage(AnalysisUsage &AU) const override
     {
@@ -84,9 +91,23 @@ struct StaticAnalyzer : public LoopPass
 		int numExits=0;
 		for (auto it = loop->block_begin(); it != loop->block_end(); it++)
 		{
-			if (loop->isLoopExiting(*it))
+			BasicBlock *BB = (*it);
+			if (loop->isLoopExiting(BB))
 			{
-				numExits++;
+				unsigned int numSuccessors=BB->getTerminator()->getNumSuccessors();
+				for (unsigned int i=0;i<numSuccessors;i++)
+				{
+					BasicBlock *succ=BB->getTerminator()->getSuccessor(i);
+					if (!BasicBlockBelongsToLoop(succ,loop))
+					{
+						if (succ != end)
+						{
+							end = succ;
+							errs() << "Exiting from loop to BB: " << succ->getName() << "\n";
+							numExits++;
+						}
+					}
+				}
 			}
 		}
 		if (numExits > 1)
@@ -172,9 +193,18 @@ struct StaticAnalyzer : public LoopPass
 
 	void PrintLoopFooter(Loop *loop,std::ofstream &myfile)
 	{
-		myfile << "\nBasic Block ( footer )\n\n";
-		myfile << "    s_final = s.addr\n";
-		myfile << "    i_final = i\n";
+		errs() << "GOT HERE" << "\n\n\n\n\n\n";
+		std::map<std::string,std::string> cache;
+		myfile << "\nBasic Block ( ";
+		myfile << end->getName().str();
+		myfile << " )\n\n";
+		for (auto inst = end->begin(); inst != end->end(); inst++)
+		{				
+			/******************************************/
+			/* [7] Extract dst temporary to temps set */
+			/******************************************/
+			PrintInstruction((Instruction *) inst,myfile,cache);
+		}
 	}
 
 	void PrintBasicBlockHeader(const std::string &name,std::ofstream &myfile)
@@ -676,6 +706,8 @@ struct StaticAnalyzer : public LoopPass
 		/*****************/
 		myfile.close();
 
+		CFG<CFG_Node> cfg;
+
 		/*******************/
 		/* [10] return ... */
 		/*******************/
@@ -759,7 +791,7 @@ struct StaticAnalyzer : public LoopPass
 		/************************************************/
 		/* [2] Handle only loops WITHOUT outgoing edges */
 		/************************************************/
-		// if (LoopFlowCanBreak(loop)) { errs() << "HAS OUT EDGES !!!\n"; return false; }
+		if (LoopFlowCanBreak(loop)) { errs() << "HAS OUT EDGES !!!\n"; return false; }
 
 		/******************************************/
 		/* [3] Single string variable inside loop */
