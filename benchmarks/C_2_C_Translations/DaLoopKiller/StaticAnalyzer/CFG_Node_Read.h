@@ -18,6 +18,12 @@ using namespace llvm;
 
 class CFG_Node_Read : public CFG_Node {
 public:
+
+	/****************************/
+	/* Print in graphviz format */
+	/****************************/
+	virtual const string &toString(){ return "GGG"; }
+
 	CFG_Node_Read(Instruction *in_i){ i = in_i; }
 	virtual void Transform()
 	{

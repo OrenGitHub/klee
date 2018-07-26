@@ -19,15 +19,26 @@ using namespace llvm;
 class CFG_Node {
 public:
 
-	/*******************************************************************/
-	/*                                                                 */
-	/*                     instruction                                 */
-	/* Each node (sigma -----------------> sigma')                     */
-	/*                                                                 */
-	/* makes a transformation according to the instruction it contains */
-	/* The transformation uses the "before" state sigma, and returns   */
-	/* "after" state sigma'.                                           */
-	/*******************************************************************/
+	/****************************/
+	/* Print in graphviz format */
+	/****************************/
+	virtual const string &toString() = 0;
+
+	/********************************************************************/
+	/*                                                                  */
+	/*                            Every node                            */
+	/*                                                                  */
+	/*              +-------+                    +--------+             */
+	/*              |       |    instruction     |        |             */
+	/*              | sigma | -----------------> | sigma' |             */
+	/*              |       |                    |        |             */
+	/*              +-------+                    +--------+             */
+	/*                                                                  */
+	/* makes a transformation according to the instruction it contains. */
+	/* The transformation uses the "before" state: sigma,               */
+	/* to modify the "after" state: sigma'.                             */
+	/*                                                                  */
+	/********************************************************************/
 	virtual void Transform() = 0;
 	
 	/*******************************************************************/
@@ -65,6 +76,10 @@ public:
 
 public:
 
+	int serial=0;
+
+protected:
+
 	Instruction *i;
 
 	/***********************************/
@@ -76,16 +91,6 @@ public:
 	/* Abstract state "after" = sigma' */
 	/***********************************/
 	AbstractState sigma_tag;
-
-	/****************************/
-	/* successor outgoing edges */
-	/****************************/
-	std::set<CFG_Node *> succs;
-
-	/*****************************/
-	/* predecessor ingoing edges */
-	/*****************************/
-	std::set<CFG_Node *> preds;
 };
 
 #endif

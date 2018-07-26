@@ -302,8 +302,7 @@ struct StaticAnalyzer : public LoopPass
 			myfile <<  "\n"  ;
 			cache[dst] = std::string("[ ") + operand + std::string(" ]");
 			
-			CFG_Node_Read *node = new CFG_Node_Read(i);
-			cfg.nodes.insert(node);
+			cfg.addNode(new CFG_Node_Read(i));
 		}
 		else
 		{
@@ -313,15 +312,10 @@ struct StaticAnalyzer : public LoopPass
 			myfile << operand;
 			myfile <<  "\n"  ;
 
-			if (i->getType()->isIntegerTy(32))
+			if ((i->getType()->isIntegerTy(32)) ||
+				(i->getType()->isIntegerTy(64)))
 			{
-				CFG_Node_Assign_Int *node = new CFG_Node_Assign_Int(i);
-				cfg.nodes.insert(node);
-			}
-			if (i->getType()->isIntegerTy(64))
-			{
-				CFG_Node_Assign_Int *node = new CFG_Node_Assign_Int(i);
-				cfg.nodes.insert(node);
+				cfg.addNode(new CFG_Node_Assign_Int(i));
 			}
 		}
 	}
@@ -367,6 +361,8 @@ struct StaticAnalyzer : public LoopPass
 			myfile << operand;
 			myfile << "\n";
 			cache[dst] = operand;
+
+			cfg.addNode(new CFG_Node_Assign_Str(i));
 		}
 		else
 		{
@@ -377,6 +373,8 @@ struct StaticAnalyzer : public LoopPass
 			myfile << " = ";
 			myfile << operand;
 			myfile << "\n";				
+
+			cfg.addNode(new CFG_Node_Write(i));
 		}
 	}
 
@@ -408,6 +406,8 @@ struct StaticAnalyzer : public LoopPass
 		myfile << offsetStr ;
 		myfile <<   "\n"    ;
 		
+		cfg.addNode(new CFG_Node_Assign_Str(i));
+		
 		cache[dst] = CacheName(ptr,cache) + std::string(" + ") + CacheName(offsetStr,cache);
 	}
 
@@ -430,18 +430,18 @@ struct StaticAnalyzer : public LoopPass
 		auto operand1 = i->getOperand(1);
 		std::string operand1Str = operand1->getName().str();
 
-		if (AA->isNoAlias(operand0,operand1))
-		{
-			errs() << "\n\n\n";
-			errs() << operand0->getName() << " and " << operand1Str << " are NOT aliased\n";
-			errs() << "\n\n\n";
-		}
-		else
-		{
-			errs() << "\n\n\n";
-			errs() << operand0->getName() << " and " << operand1Str << " are aliased\n";
-			errs() << "\n\n\n";
-		}
+		//if (AA->isNoAlias(operand0,operand1))
+		//{
+		//	errs() << "\n\n\n";
+		//	errs() << operand0->getName() << " and " << operand1Str << " are NOT aliased\n";
+		//	errs() << "\n\n\n";
+		//}
+		//else
+		//{
+		//	errs() << "\n\n\n";
+		//	errs() << operand0->getName() << " and " << operand1Str << " are aliased\n";
+		//	errs() << "\n\n\n";
+		//}
 
 		/****************************/
 		/* [4] Extract the operator */
@@ -531,6 +531,8 @@ struct StaticAnalyzer : public LoopPass
 		/* [4] Cache Sect instruction */
 		/******************************/
 		cache[dst] = CacheName(operand,cache);
+		
+		cfg.addNode(new CFG_Node_Assign_Int(i));
 	}
 
 	std::string Value2String(Value *v)
@@ -639,29 +641,6 @@ struct StaticAnalyzer : public LoopPass
 		if ( strncmp( opcode,"call",          4) == 0) Print_Call(  (CallInst          *) i,myfile,cache );	
 	}
 
-#if 0
-				/*************************************/
-				/* [3] Inspect arguments of commands */
-				/*************************************/
-				Instruction *i = (Instruction *) inst;
-				std::string dst_type;
-				if (inst->getType()->isIntegerTy( 8))      { dst_type = "char"; }
-				else if (inst->getType()->isIntegerTy(32)) { dst_type = "int";  }
-				else if (inst->getType()->isIntegerTy( 1)) { dst_type = "bool"; }
-				else if (inst->getType()->isPointerTy())
-				{
-					if (((PointerType *) (inst->getType()))->getElementType()->isIntegerTy(8))
-					{
-						dst_type = "char *";
-					}
-					if (((PointerType *) (inst->getType()))->getElementType()->isIntegerTy(32))
-					{
-						dst_type = "int *";
-					}
-				}
-				else                                       { dst_type = "other";}
-#endif
-
 	bool Init(Loop *loop)
 	{
 		static int intSerial=0;
@@ -719,18 +698,28 @@ struct StaticAnalyzer : public LoopPass
 		/*************************/
 		PrintLoopFooter(loop,myfile);
 
-		/*****************/
-		/* 9] Close file */
-		/*****************/
+		/******************/
+		/* [9] Close file */
+		/******************/
 		myfile.close();
 
+		/*************************/
+		/* [10] Add edges to CFG */
+		/*************************/
+		// cfg.addEdges();
+
+		/********************/
+		/* [11] Analyze CFG */
+		/********************/
+		cfg.analyze();
+
 		/*******************/
-		/* [10] return ... */
+		/* [12] return ... */
 		/*******************/
 		return false;
 	}
 	
-	CFG<CFG_Node> cfg;
+	CFG cfg;
 
 	AliasAnalysis *AA;
 
