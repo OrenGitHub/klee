@@ -1,6 +1,12 @@
 #ifndef __CFG_NODE_ASSIGN_STR_H__
 #define __CFG_NODE_ASSIGN_STR_H__
 
+/*************************************/
+/* INCLUDE FILES :: standard library */
+/*************************************/
+#include <stdlib.h>
+#include <memory.h>
+
 /****************************/
 /* INCLUDE FILES :: PROJECT */
 /****************************/
@@ -21,7 +27,20 @@ public:
 	/****************************/
 	/* Print in graphviz format */
 	/****************************/
-	virtual const string &toString(){ return "DDD"; }
+	virtual const std::string toString()
+	{
+		return
+			std::string("["              )+
+			std::string("shape = Mrecord")+
+			std::string(","              )+
+			std::string(" label = "      )+
+			std::string("\""             )+
+			sigma.    toString(          )+
+			sigma_tag.toString(          )+
+			std::string("\""             )+
+			std::string("]\n"            );
+	}
+	virtual const char *getKind(){ return "CFG_Node_Assign_Str"; }
 
 	CFG_Node_Assign_Str(Instruction *in_i) { i = in_i; }
 

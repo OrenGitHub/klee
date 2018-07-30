@@ -22,7 +22,8 @@ public:
 	/****************************/
 	/* Print in graphviz format */
 	/****************************/
-	virtual const string &toString(){ return "GGG"; }
+	virtual const std::string toString(){ return "GGG"; }
+	virtual const char *getKind(){ return "CFG_Node_Read"; }
 
 	CFG_Node_Read(Instruction *in_i){ i = in_i; }
 	virtual void Transform()

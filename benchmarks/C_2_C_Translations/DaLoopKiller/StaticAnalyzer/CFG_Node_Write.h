@@ -16,7 +16,8 @@ public:
 	/****************************/
 	/* Print in graphviz format */
 	/****************************/
-	virtual const string &toString(){ return "DDD"; }
+	virtual const std::string toString(){ return "DDD"; }
+	virtual const char *getKind(){ return "CFG_Node_Write"; }
 
 	CFG_Node_Write(Instruction *in_i) { i = in_i; }
 

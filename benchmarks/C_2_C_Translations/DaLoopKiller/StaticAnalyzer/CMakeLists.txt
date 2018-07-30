@@ -1,2 +1,7 @@
 SET(CMAKE_CXX_FLAGS "-Wall -fno-rtti")
-add_library(StaticAnalyzer MODULE StaticAnalyzer.cpp)
+add_library(StaticAnalyzer MODULE
+StaticAnalyzer.cpp
+AbstractState.cpp
+AbstractStateElement_Readinfo.cpp
+AbstractStateElement_LinearConstraints.cpp
+)

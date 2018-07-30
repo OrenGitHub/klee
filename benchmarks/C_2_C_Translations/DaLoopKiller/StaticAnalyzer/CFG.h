@@ -16,25 +16,70 @@
 /********************/
 using namespace std;
 
+/*********************/
+/* NAMESPACE :: llvm */
+/*********************/
+using namespace llvm;
+
+/***********************/
+/* Successors function */
+/***********************/
+bool Successors(Loop *loop, CFG_Node *u, CFG_Node *v)
+{
+	for (auto it = loop->block_begin(); it != loop->block_end(); it++)
+	{
+		for (auto inst = (*it)->begin(); inst != (*it)->end();)
+		{
+			Instruction *i    = (Instruction *) inst++;
+			Instruction *next = (Instruction *) inst;
+			if ((u->i == i) && (v->i == next))
+			{
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
 /*************************************/
 /* CLASS :: CFG (Control Flow Graph) */
 /*************************************/
 class CFG {
 public:
 
-	void addNode(CFG_Node *u            ){ nodes.insert(u);              }
-	void addEdge(CFG_Node *u,CFG_Node *v){ edges.insert(make_pair(u,v)); }
+	void addNode(CFG_Node *u){ nodes.insert(u); }
+	void addEdges(Loop *loop)
+	{
+		for (CFG_Node *u:nodes)
+		{
+			for (CFG_Node *v:nodes)
+			{
+				if (u->serial != v->serial)
+				{
+					errs() << "now checking for edge exitance between: ";
+					errs() << "Node " << u->serial;
+					errs() << " and ";
+					errs() << "Node " << v->serial;
+					if (Successors(loop,u,v))
+					{
+						u->succs.insert(v);
+					}
+				}
+			}
+		}
+	}
 
 public:
 
 	void analyze()
 	{
-		while (Changed())
+		Log();
+		do
 		{
-			Log();
 			Transform();
 			Update();
 		}
+		while (Changed());
 	}
 
 private:
@@ -66,7 +111,7 @@ private:
 	/* is observed in *ALL* nodes.                                       */
 	/*                                                                   */
 	/*********************************************************************/
-	bool Changed(){ return true; }
+	bool Changed(){ return false; }
 
 	/*********************************************************************/
 	/*                                                                   */
@@ -98,7 +143,7 @@ private:
 		/*****************/
 		/* [5] Log nodes */
 		/*****************/
-		LogEdges();
+		// LogEdges();
 
 		/******************/
 		/* [6] Close file */
@@ -110,13 +155,24 @@ private:
 
 	void LogNodes()
 	{
-		for (auto node:nodes)
+		int i=0;
+		int size = nodes.size();
+		errs() << "number of nodes is: " << nodes.size() << "\n";
+		for (auto it:nodes)
 		{
+			errs() << "iteration " << i++	 << "\n";
+			CFG_Node *node = it;
+			errs() << "node serial is: " << node->serial << "\n";
+			
 			/***********************/
 			/* [1] name every node */
 			/***********************/
 			myfile << "v" << node->serial;
 
+			errs() << node->getKind() << "\n\n";
+			errs() << node->toString() << "\n\n";
+			errs() << "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n\n";
+						
 			/************************/
 			/* [2] print node label */
 			/************************/
@@ -126,13 +182,19 @@ private:
 
 	void LogEdges()
 	{
-		for (auto edge:edges)
+		for (auto u:nodes)
 		{
-			/***********************/
-			/* [1] name every edge */
-			/***********************/
-			myfile << "v" << edge.first ->serial << " -> ";
-			myfile << "v" << edge.second->serial << "\n";
+			for (auto v:nodes)
+			{
+				if (u->serial != v->serial)
+				{
+					if (u->succs.find(v) != u->succs.end())
+					{
+						myfile << "v" << u->serial << " -> ";
+						myfile << "v" << v->serial << "\n";					
+					}					
+				}
+			}
 		}
 	}
 
@@ -151,12 +213,11 @@ private:
 	/****************************************************************/
 	/* Put all analysis steps in a dedicated directory of their own */
 	/****************************************************************/
-	const string dir = "./ANALYSIS_STEPS/CFG_STEP_";
+	const string dir = "/home/oren/GIT/klee/str.klee/klee/benchmarks/C_2_C_Translations/DaLoopKiller/ANALYSIS_STEPS/CFG_STEP_";
 
 private:
 
 	set<CFG_Node *> nodes;
-	set<pair<CFG_Node *,CFG_Node *> > edges;
 };
 
 #endif

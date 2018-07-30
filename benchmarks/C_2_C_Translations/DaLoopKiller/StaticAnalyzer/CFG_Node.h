@@ -1,20 +1,18 @@
 #ifndef __CFG_NODE_H__
 #define __CFG_NODE_H__
 
+/************************/
+/* FILENAME: CFG_Node.h */
+/************************/
 /****************************/
 /* INCLUDE FILES :: PROJECT */
 /****************************/
 #include "AbstractState.h"
 
-/*******************/
-/* NAMESPACE ::std */
-/*******************/
-using namespace std;
-
-/*******************/
-/* NAMESPACE ::std */
-/*******************/
-using namespace llvm;
+/***************/
+/* DEFINITIONS */
+/***************/
+#define MAX_DESCRIPTION_LENGTH 1024
 
 class CFG_Node {
 public:
@@ -22,7 +20,7 @@ public:
 	/****************************/
 	/* Print in graphviz format */
 	/****************************/
-	virtual const string &toString() = 0;
+	virtual const std::string toString() = 0;
 
 	/********************************************************************/
 	/*                                                                  */
@@ -62,25 +60,27 @@ public:
 	/* is observed in *ALL* nodes.                                       */
 	/*                                                                   */
 	/*********************************************************************/
-	bool Changed(){ return (sigma == sigma_tag); }
-
-	/*****************/
-	/*               */
-	/* Join operator */
-	/*               */
-	/*****************/
-	void join(const AbstractState *sigma)
-	{
-		
-	}
+	bool Changed(){ return (sigma != sigma_tag); }
 
 public:
 
 	int serial=0;
 
-protected:
+	llvm::Instruction *i;
 
-	Instruction *i;
+	/****************/
+	/* predecessors */
+	/****************/
+	std::set<CFG_Node *> preds;
+
+	/**************/
+	/* successors */
+	/**************/
+	std::set<CFG_Node *> succs;
+
+	virtual const char *getKind(){ return "invalid kind"; }
+
+protected:
 
 	/***********************************/
 	/* Abstract state "before" = sigma */

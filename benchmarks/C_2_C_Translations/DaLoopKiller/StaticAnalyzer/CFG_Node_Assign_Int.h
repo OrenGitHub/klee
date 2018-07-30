@@ -23,7 +23,7 @@ public:
 	/****************************/
 	/* Print in graphviz format */
 	/****************************/
-	virtual const string &toString(){ return "DDD"; }
+	virtual const std::string toString(){ return "DDD"; }
 
 	virtual void Transform()
 	{
