@@ -26,26 +26,6 @@ using namespace std;
 /*********************/
 using namespace llvm;
 
-/***********************/
-/* Successors function */
-/***********************/
-bool Successors(Loop *loop, CFG_Node *u, CFG_Node *v)
-{
-	for (auto it = loop->block_begin(); it != loop->block_end(); it++)
-	{
-		for (auto inst = (*it)->begin(); inst != (*it)->end();)
-		{
-			Instruction *i    = (Instruction *) inst++;
-			Instruction *next = (Instruction *) inst;
-			if ((u->i == i) && (v->i == next))
-			{
-				return true;
-			}
-		}
-	}
-	return false;
-}
-
 /*************************************/
 /* CLASS :: CFG (Control Flow Graph) */
 /*************************************/
@@ -55,17 +35,18 @@ public:
 	void addNode(CFG_Node *u){ nodes.insert(u); }
 	void addEdges(Loop *loop)
 	{
-		for (CFG_Node *u:nodes)
+		for (auto u:nodes)
 		{
-			for (CFG_Node *v:nodes)
+			for (auto v:nodes)
 			{
-				if (u->serial != v->serial)
+				//if ((u->serial == 6) && (v->serial == 7))
 				{
+					llvm::errs() << "u name: " << u->i->getName().str();
+					llvm::errs() << "v name: " << v->i->getName().str();
+					llvm::errs() << "u kind: " << u->getKind();
+					llvm::errs() << "v kind: " << v->getKind();
 					if (Successors(loop,u,v))
 					{
-						errs() << "Found ";
-						errs() << "(" << u->serial << "," << v->serial << ") ";
-						errs() << "is an edge\n";
 						u->succs.insert(v);
 					}
 				}
@@ -152,16 +133,30 @@ private:
 		/*****************************************************/
 		/* [4] Print graphviz dot header for directed graphs */
 		/*****************************************************/
-		myfile << "digraph {\n";
+		myfile << "/***********/\n";
+		myfile << "/* DIGRAPH */\n";
+		myfile << "/***********/\n";
+		myfile << "digraph\n{\n";
+		myfile << "    /***********/\n";
+		myfile << "    /* RANKDIR */\n";
+		myfile << "    /***********/\n";
+		myfile << "    rankdir = UD\n\n";
 
 		/*****************/
 		/* [5] Log nodes */
 		/*****************/
+		myfile << "    /*********/\n";
+		myfile << "    /* NODES */\n";
+		myfile << "    /*********/\n";
 		LogNodes();
 	
 		/*****************/
 		/* [6] Log edges */
 		/*****************/
+		myfile << "\n";
+		myfile << "    /*********/\n";
+		myfile << "    /* EDGES */\n";
+		myfile << "    /*********/\n";
 		LogEdges();
 
 		/*********************************/
@@ -181,18 +176,16 @@ private:
 	{
 		for (auto node:nodes)
 		{
-			std::string node_description = node->toString();
-			errs() << "Now logging: " << "v" << node->serial << " " << "( " << node->getKind() << " )\n";
-			errs() << node_description << "\n\n";
 			/***********************/
-			/* [1] name every node */
+			/* [1] CFG node serial */
 			/***********************/
-			myfile << "v" << node->serial << " ";
+			myfile << "    " << "v" << setw(2) << setfill('0') << node->serial << " ";
 						
-			/************************/
-			/* [2] print node label */
-			/************************/
-			myfile << node_description << "\n\n";
+			/******************************/
+			/* [2] print node description */
+			/******************************/
+			std::string node_description = node->toString();
+			myfile   << node_description;
 		}
 	}
 
@@ -200,18 +193,81 @@ private:
 	{
 		for (auto u:nodes)
 		{
-			for (auto v:nodes)
+			for (auto v:u->succs)
 			{
-				if (u->serial != v->serial)
+				myfile << "    ";
+				myfile << "v" << setw(2) << setfill('0') << u->serial << " -> ";
+				myfile << "v" << setw(2) << setfill('0') << v->serial << "\n";					
+			}					
+		}
+	}
+
+
+private:
+
+	/***********************/
+	/* Successors function */
+	/***********************/
+	bool Successors(Loop *loop, CFG_Node *u, CFG_Node *v)
+	{
+		auto end   = loop->block_end();
+		auto begin = loop->block_begin();
+
+		/******************************************************/
+		/* first add an edge between consecutive instructions */
+		/* of the same basic block                            */
+		/******************************************************/
+		for (auto it = begin; it != end; it++)
+		{
+			for (auto inst = (*it)->begin(); inst != (*it)->end();)
+			{
+				Instruction *i    = (Instruction *) inst++;
+				Instruction *next = (Instruction *) inst;
+				llvm::errs() << "         " << i   ->getName().str();
+				llvm::errs() << " ------> " << next->getName().str();
+				llvm::errs() << " ??? ";	
+				if ((u->i == i) && (v->i == next))
 				{
-					if (u->succs.find(v) != u->succs.end())
-					{
-						myfile << "v" << u->serial << " -> ";
-						myfile << "v" << v->serial << "\n";					
-					}					
+					llvm::errs() << "Yes\n";
+					return true;
+				}
+				else
+				{
+					llvm::errs() << "No:\n";
+					
 				}
 			}
 		}
+		
+		/*******************************************************/
+		/* then add an edge between the terminator instruction */
+		/* of every basic block to the first instruction of    */
+		/* its successor(s) basic block(s)                     */
+		/*******************************************************/
+		for (auto it = loop->block_begin(); it != loop->block_end(); it++)
+		{
+			for (auto inst = (*it)->begin(); inst != (*it)->end(); inst++)
+			{
+				Instruction *i = (Instruction *) inst;
+				if (i == (*it)->getTerminator())
+				{
+					if (u->i == i)
+					{
+						int n=(*it)->getTerminator()->getNumSuccessors();
+						for (int i=0;i<n;i++)
+						{
+							Instruction *next=(Instruction *) (*it)->getTerminator()->getSuccessor(i)->begin();
+							errs() << "first instruction of successor block: " << next->getName() << "\n";
+							if (v->i == next)
+							{
+								return true;
+							}
+						}
+					}
+				}
+			}
+		}
+		return false;
 	}
 
 private:
@@ -233,7 +289,17 @@ private:
 
 private:
 
+	/*************/
+	/* CFG nodes */
+	/*************/
 	set<CFG_Node *> nodes;
+
+public:
+
+	/*******************/
+	/* CFG entry point */
+	/*******************/
+	BasicBlock *entry_point = nullptr;
 };
 
 #endif

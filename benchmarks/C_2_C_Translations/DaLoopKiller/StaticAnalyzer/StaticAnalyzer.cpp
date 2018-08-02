@@ -183,6 +183,7 @@ struct StaticAnalyzer : public LoopPass
 				(BasicBlockBelongsToLoop(&(*BB),loop) == false))
 			{
 				init = &(*BB);
+				cfg.entry_point =init;
 			}
 		}
 		myfile << "\nBasic Block ( ";
@@ -228,7 +229,6 @@ struct StaticAnalyzer : public LoopPass
 
 	void ScanVars(Value *v)
 	{
-		errs() << "scanning: " << v->getName().str() << "\n";
 		if (temps.find(v->getName().str()) == temps.end())
 		{
 			if (v->getType()->isIntegerTy(8))
@@ -301,8 +301,8 @@ struct StaticAnalyzer : public LoopPass
 			myfile <<  " ]"  ;
 			myfile <<  "\n"  ;
 			cache[dst] = std::string("[ ") + operand + std::string(" ]");
-			
-			cfg.addNode(new CFG_Node_Read(i,node_serial++));
+			errs() << "now adding a CFG_Node_Read with serial == " << node_serial << "\n";
+			cfg.addNode(new CFG_Node_Read(node_serial++,i,dst,operand));
 		}
 		else
 		{
@@ -315,8 +315,11 @@ struct StaticAnalyzer : public LoopPass
 			if ((i->getType()->isIntegerTy(32)) ||
 				(i->getType()->isIntegerTy(64)))
 			{
-				cfg.addNode(new CFG_Node_Assign_Int(i,node_serial++));
+				errs() << "now adding a CFG_Node_Assign_Int with serial == " << node_serial << "\n";
+				cfg.addNode(new CFG_Node_Assign_Int(node_serial++,i,dst,operand));
 			}
+			errs() << "now adding a CFG_Node_Assign_Str with serial == " << node_serial << "\n";
+			cfg.addNode(new CFG_Node_Assign_Str(node_serial++,i,dst,operand));
 		}
 	}
 
@@ -362,7 +365,7 @@ struct StaticAnalyzer : public LoopPass
 			myfile << "\n";
 			cache[dst] = operand;
 
-			cfg.addNode(new CFG_Node_Assign_Str(i,node_serial++));
+			cfg.addNode(new CFG_Node_Assign_Str(node_serial++,i,dst,operand));
 		}
 		else
 		{
@@ -374,7 +377,7 @@ struct StaticAnalyzer : public LoopPass
 			myfile << operand;
 			myfile << "\n";				
 
-			cfg.addNode(new CFG_Node_Write(i,node_serial++));
+			cfg.addNode(new CFG_Node_Write(node_serial++,i,dst,operand));
 		}
 	}
 
@@ -406,7 +409,7 @@ struct StaticAnalyzer : public LoopPass
 		myfile << offsetStr ;
 		myfile <<   "\n"    ;
 		
-		cfg.addNode(new CFG_Node_Assign_Str(node_serial++,dst,ptr,offsetStr));
+		cfg.addNode(new CFG_Node_Assign_Str(node_serial++,i,dst,ptr,offsetStr));
 		
 		cache[dst] = CacheName(ptr,cache) + std::string(" + ") + CacheName(offsetStr,cache);
 	}
@@ -533,7 +536,7 @@ struct StaticAnalyzer : public LoopPass
 		/******************************/
 		cache[dst] = CacheName(operand,cache);
 		
-		cfg.addNode(new CFG_Node_Assign_Int(i,node_serial++));
+		cfg.addNode(new CFG_Node_Assign_Int(node_serial++,i,dst,operand));
 	}
 
 	std::string Value2String(Value *v)

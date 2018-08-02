@@ -18,10 +18,18 @@ using namespace llvm;
 
 class CFG_Node_Read : public CFG_Node {
 public:
-	/*********************************/
-	/* Import base class constructor */
-	/*********************************/
-	using CFG_Node::CFG_Node;
+
+	CFG_Node_Read(
+		int in_serial,
+		Instruction *in_i,
+		const std::string &in_dst,
+		const std::string &in_src)
+	{
+		i      = in_i;
+		serial = in_serial;
+		dst    = in_dst;
+		src    = in_src;
+	}
 
 	/****************************/
 	/* Print in graphviz format */
@@ -49,6 +57,11 @@ public:
 	{
 		//readinfo[dst] = make_tuple(src,sigma.contains[src,
 	}
+	
+private:
+	
+	std::string dst;
+	std::string src;
 };
 
 #endif

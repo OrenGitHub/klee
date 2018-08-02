@@ -67,13 +67,7 @@ public:
 public:
 
 	int serial;
-	llvm::Instruction *i;
-	CFG_Node(){}
-	CFG_Node(llvm::Instruction *in_i,int in_serial)
-	{
-		i = in_i;
-		serial = in_serial;
-	}
+	llvm::Instruction *i = nullptr;
 
 	/****************/
 	/* predecessors */

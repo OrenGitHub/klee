@@ -32,10 +32,12 @@ public:
 
 	CFG_Node_Assign_Str(
 		int in_serial,
+		Instruction *in_i,
 		const std::string &in_dst,
 		const std::string &in_src,
 		const std::string &in_offset="")
 	{
+		i      = in_i;
 		serial = in_serial;
 		dst    = in_dst;
 		src    = in_src;

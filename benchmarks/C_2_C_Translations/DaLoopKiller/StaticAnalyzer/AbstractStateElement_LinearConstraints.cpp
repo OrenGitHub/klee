@@ -23,10 +23,6 @@ const std::string AbstractStateElement_LinearConstraints::toString()
 {
 	std::string result;
 
-	llvm::errs() << "eqs  size = " << eqs .size() << "\n";
-	llvm::errs() << "lts  size = " << lts .size() << "\n";
-	llvm::errs() << "leqs size = " << leqs.size() << "\n";
-	
 	for (auto eq :eqs ) { result += eq ->toString(); }
 	for (auto lt :lts ) { result += lt ->toString(); }
 	for (auto leq:leqs) { result += leq->toString(); }

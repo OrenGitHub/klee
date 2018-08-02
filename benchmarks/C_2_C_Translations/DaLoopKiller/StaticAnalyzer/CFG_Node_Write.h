@@ -13,10 +13,18 @@ using namespace std;
 
 class CFG_Node_Write : public CFG_Node {
 public:
-	/*********************************/
-	/* Import base class constructor */
-	/*********************************/
-	using CFG_Node::CFG_Node;
+
+	CFG_Node_Write(
+		int in_serial,
+		Instruction *in_i,
+		const std::string &in_dst,
+		const std::string &in_src)
+	{
+		i      = in_i;
+		serial = in_serial;
+		dst    = in_dst;
+		src    = in_src;
+	}
 
 	/****************************/
 	/* Print in graphviz format */
@@ -30,6 +38,9 @@ public:
 			std::string(" label = "      )+
 			std::string("\""             )+
 			sigma.    toString(          )+
+			std::string("|"              )+
+			std::string("write"          )+
+			std::string("|"              )+
 			sigma_tag.toString(          )+
 			std::string("\""             )+
 			std::string("]\n"            );		
@@ -40,6 +51,11 @@ public:
 	{
 		//readinfo[dst] = make_tuple(src,sigma.contains[src,
 	}
+
+private:
+
+	std::string dst;
+	std::string src;
 };
 
 #endif
