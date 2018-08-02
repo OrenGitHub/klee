@@ -1,6 +1,11 @@
 /********************************************************/
 /* FILENAME: AbstractStateElement_LinearConstraints.cpp */
 /********************************************************/
+/*************************/
+/* INCLUDE FILES :: LLVM */
+/*************************/
+#include "llvm/Support/raw_ostream.h"
+
 /****************************/
 /* INCLUDE FILES :: PROJECT */
 /****************************/
@@ -17,10 +22,14 @@
 const std::string AbstractStateElement_LinearConstraints::toString()
 {
 	std::string result;
+
+	llvm::errs() << "eqs  size = " << eqs .size() << "\n";
+	llvm::errs() << "lts  size = " << lts .size() << "\n";
+	llvm::errs() << "leqs size = " << leqs.size() << "\n";
 	
-	for (auto eq :eqs ) { result += eq .first+std::string("=" )+eq .second+std::string("\n"); }
-	for (auto lt :lts ) { result += lt .first+std::string("<" )+lt .second+std::string("\n"); }
-	for (auto leq:leqs) { result += leq.first+std::string("<=")+leq.second+std::string("\n"); }
+	for (auto eq :eqs ) { result += eq ->toString(); }
+	for (auto lt :lts ) { result += lt ->toString(); }
+	for (auto leq:leqs) { result += leq->toString(); }
 	
 	return result;
 }

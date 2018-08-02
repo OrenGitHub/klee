@@ -17,9 +17,11 @@
 class CFG_Node {
 public:
 
-	/****************************/
-	/* Print in graphviz format */
-	/****************************/
+	virtual const char *getKind(){ return "INVALID NODE"; }
+
+	/******************************/
+	/* Convert CFG node to string */
+	/******************************/
 	virtual const std::string toString() = 0;
 
 	/********************************************************************/
@@ -45,12 +47,12 @@ public:
 	/* or predecessors depending on the relevant analysis)             */
 	/*                                                                 */
 	/*******************************************************************/
-	void Update()
+	virtual void Update()
 	{
-		//for (CFG_Node *succ:succs)
-		//{
-		//	succ->join(sigma_tag);
-		//}
+		for (auto succ:succs)
+		{
+			succ->sigma.join(sigma_tag);
+		}
 	}
 
 	/*********************************************************************/
@@ -64,9 +66,14 @@ public:
 
 public:
 
-	int serial=0;
-
+	int serial;
 	llvm::Instruction *i;
+	CFG_Node(){}
+	CFG_Node(llvm::Instruction *in_i,int in_serial)
+	{
+		i = in_i;
+		serial = in_serial;
+	}
 
 	/****************/
 	/* predecessors */
@@ -77,8 +84,6 @@ public:
 	/* successors */
 	/**************/
 	std::set<CFG_Node *> succs;
-
-	virtual const char *getKind(){ return "invalid kind"; }
 
 protected:
 

@@ -302,7 +302,7 @@ struct StaticAnalyzer : public LoopPass
 			myfile <<  "\n"  ;
 			cache[dst] = std::string("[ ") + operand + std::string(" ]");
 			
-			cfg.addNode(new CFG_Node_Read(i));
+			cfg.addNode(new CFG_Node_Read(i,node_serial++));
 		}
 		else
 		{
@@ -315,7 +315,7 @@ struct StaticAnalyzer : public LoopPass
 			if ((i->getType()->isIntegerTy(32)) ||
 				(i->getType()->isIntegerTy(64)))
 			{
-				cfg.addNode(new CFG_Node_Assign_Int(i));
+				cfg.addNode(new CFG_Node_Assign_Int(i,node_serial++));
 			}
 		}
 	}
@@ -362,7 +362,7 @@ struct StaticAnalyzer : public LoopPass
 			myfile << "\n";
 			cache[dst] = operand;
 
-			cfg.addNode(new CFG_Node_Assign_Str(i));
+			cfg.addNode(new CFG_Node_Assign_Str(i,node_serial++));
 		}
 		else
 		{
@@ -374,7 +374,7 @@ struct StaticAnalyzer : public LoopPass
 			myfile << operand;
 			myfile << "\n";				
 
-			cfg.addNode(new CFG_Node_Write(i));
+			cfg.addNode(new CFG_Node_Write(i,node_serial++));
 		}
 	}
 
@@ -406,7 +406,7 @@ struct StaticAnalyzer : public LoopPass
 		myfile << offsetStr ;
 		myfile <<   "\n"    ;
 		
-		cfg.addNode(new CFG_Node_Assign_Str(i));
+		cfg.addNode(new CFG_Node_Assign_Str(node_serial++,dst,ptr,offsetStr));
 		
 		cache[dst] = CacheName(ptr,cache) + std::string(" + ") + CacheName(offsetStr,cache);
 	}
@@ -458,6 +458,7 @@ struct StaticAnalyzer : public LoopPass
 		case (39): op = " >= "; break;
 		case (40): op = " < " ; break;
 		case (41): op = " <= "; break;
+		default  : op = "    "; break;
 		}
 		
 		/**********************************/
@@ -532,7 +533,7 @@ struct StaticAnalyzer : public LoopPass
 		/******************************/
 		cache[dst] = CacheName(operand,cache);
 		
-		cfg.addNode(new CFG_Node_Assign_Int(i));
+		cfg.addNode(new CFG_Node_Assign_Int(i,node_serial++));
 	}
 
 	std::string Value2String(Value *v)
@@ -706,7 +707,7 @@ struct StaticAnalyzer : public LoopPass
 		/*************************/
 		/* [10] Add edges to CFG */
 		/*************************/
-		// cfg.addEdges();
+		cfg.addEdges(loop);
 
 		/********************/
 		/* [11] Analyze CFG */
@@ -720,6 +721,8 @@ struct StaticAnalyzer : public LoopPass
 	}
 	
 	CFG cfg;
+
+	int node_serial=0;
 
 	AliasAnalysis *AA;
 
@@ -778,24 +781,24 @@ struct StaticAnalyzer : public LoopPass
 		/*************************************/
 		/* [5] Print participating variables */
 		/*************************************/
-		errs() << "external svars:\n"; for (auto external_svar : external_svars) { errs() << external_svar->getName().str() << "\n"; }
-		errs() << "external ivars:\n"; for (auto external_ivar : external_ivars) { errs() << external_ivar << "\n"; }
-		errs() << "external cvars:\n"; for (auto external_cvar : external_cvars) { errs() << external_cvar << "\n"; }
+		//errs() << "external svars:\n"; for (auto external_svar : external_svars) { errs() << external_svar->getName().str() << "\n"; }
+		//errs() << "external ivars:\n"; for (auto external_ivar : external_ivars) { errs() << external_ivar << "\n"; }
+		//errs() << "external cvars:\n"; for (auto external_cvar : external_cvars) { errs() << external_cvar << "\n"; }
 
-		for (auto v1 : external_svars)
-		{
-			for (auto v2 : external_svars)
-			{
-				if (v1 != v2)
-				{
-					if (AA->isNoAlias(v1,v2))
-					{
-						errs() << v1->getName().str() << " and " << v2->getName().str();
-						errs() << " are *NOT* aliases of one another\n";
-					}
-				}	
-			}
-		}
+		//for (auto v1 : external_svars)
+		//{
+		//	for (auto v2 : external_svars)
+		//	{
+		//		if (v1 != v2)
+		//		{
+		//			if (AA->isNoAlias(v1,v2))
+		//			{
+		//				errs() << v1->getName().str() << " and " << v2->getName().str();
+		//				errs() << " are *NOT* aliases of one another\n";
+		//			}
+		//		}	
+		//	}
+		//}
 
 		/****************************/
 		/* [4] Did the loop change? */

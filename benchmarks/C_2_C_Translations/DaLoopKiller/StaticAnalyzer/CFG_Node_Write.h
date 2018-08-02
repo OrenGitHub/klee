@@ -13,13 +13,28 @@ using namespace std;
 
 class CFG_Node_Write : public CFG_Node {
 public:
+	/*********************************/
+	/* Import base class constructor */
+	/*********************************/
+	using CFG_Node::CFG_Node;
+
 	/****************************/
 	/* Print in graphviz format */
 	/****************************/
-	virtual const std::string toString(){ return "DDD"; }
+	virtual const std::string toString()
+	{
+		return
+			std::string("["              )+
+			std::string("shape = Mrecord")+
+			std::string(","              )+
+			std::string(" label = "      )+
+			std::string("\""             )+
+			sigma.    toString(          )+
+			sigma_tag.toString(          )+
+			std::string("\""             )+
+			std::string("]\n"            );		
+	}
 	virtual const char *getKind(){ return "CFG_Node_Write"; }
-
-	CFG_Node_Write(Instruction *in_i) { i = in_i; }
 
 	virtual void Transform()
 	{

@@ -6,6 +6,11 @@
 /****************************/
 #include <assert.h>
 
+/*************************/
+/* INCLUDE FILES :: LLVM */
+/*************************/
+#include "llvm/Support/raw_ostream.h"
+
 /****************************/
 /* INCLUDE FILES :: PROJECT */
 /****************************/
@@ -13,35 +18,35 @@
 #include "AbstractStateElement_Readinfo.h"
 #include "AbstractStateElement_LinearConstraints.h"
 
-/**********************************/
-/* AbstractState :: AbstractState */
-/**********************************/
-AbstractState::AbstractState()
-{
-	elements.push_back( new AbstractStateElement_LinearConstraints);
-	elements.push_back( new AbstractStateElement_LinearConstraints);
-	elements.push_back( new AbstractStateElement_Readinfo         );
-}
-
 /*****************************/
 /* AbstractState :: toString */
 /*****************************/
 const std::string AbstractState::toString()
 {
-	std::string result;
-	for (auto element:elements) { result += element->toString(); }
-	return result;
+	return
+		str_constraints.toString()+
+		int_constraints.toString()+
+		readinfo.toString();
 }
 
-/*****************************/
-/* AbstractState :: toString */
-/*****************************/
+/********************************/
+/* AbstractState :: operator == */
+/********************************/
 bool AbstractState::operator==(const AbstractState &that)
 {
-	bool result = true;
-	int size = elements.size();
-	assert( size == that.elements.size() );
-	for (int i=0;i<size;i++) { result = result && (elements[i] == that.elements[i]); }
-	return result;
+	return
+		(str_constraints == that.str_constraints) &&
+		(int_constraints == that.int_constraints) &&
+		(readinfo        == that.readinfo);
+}
+
+/*************************/
+/* AbstractState :: join */
+/*************************/
+void AbstractState::join(const AbstractState &that)
+{
+	str_constraints.join(that.str_constraints);
+	int_constraints.join(that.int_constraints);
+	readinfo       .join(that.readinfo);
 }
 

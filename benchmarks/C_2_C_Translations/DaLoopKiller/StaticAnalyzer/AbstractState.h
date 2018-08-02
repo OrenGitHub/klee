@@ -14,6 +14,8 @@
 /* INCLUDE FILES :: PROJECT */
 /****************************/
 #include "AbstractStateElement.h"
+#include "AbstractStateElement_Readinfo.h"
+#include "AbstractStateElement_LinearConstraints.h"
 
 /***********************************************/
 /*                                             */
@@ -26,14 +28,9 @@
 /***********************************************/
 class AbstractState {
 public:
-	/****************************************/
-	/* Constructor initializes the elements */
-	/****************************************/
-	AbstractState();
-
-	/******************************************/
-	/* convert to Graphviz dot representation */
-	/******************************************/
+	/*********************/
+	/* convert to string */
+	/*********************/
 	const std::string toString();
 
 	/***********************************************************/
@@ -42,10 +39,17 @@ public:
 	bool operator==(const AbstractState &that);
 	bool operator!=(const AbstractState &that);
 
+	/*********************/
+	/* The join operator */
+	/*********************/
+	void join(const AbstractState &that);
+
 	/****************************************/
 	/* The elements make the abstract state */
 	/****************************************/
-	std::vector<AbstractStateElement *> elements;
+	AbstractStateElement_LinearConstraints str_constraints;
+	AbstractStateElement_LinearConstraints int_constraints;
+	AbstractStateElement_Readinfo          readinfo;
 };
 
 #endif

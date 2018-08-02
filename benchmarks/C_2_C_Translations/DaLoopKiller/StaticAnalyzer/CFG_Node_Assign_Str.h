@@ -11,6 +11,7 @@
 /* INCLUDE FILES :: PROJECT */
 /****************************/
 #include "CFG_Node.h"
+#include "AbstractStateElement_LinearConstraints.h"
 
 /*******************/
 /* NAMESPACE ::std */
@@ -24,6 +25,23 @@ using namespace llvm;
 
 class CFG_Node_Assign_Str : public CFG_Node {
 public:
+	/*********************************/
+	/* Import base class constructor */
+	/*********************************/
+	using CFG_Node::CFG_Node;
+
+	CFG_Node_Assign_Str(
+		int in_serial,
+		const std::string &in_dst,
+		const std::string &in_src,
+		const std::string &in_offset="")
+	{
+		serial = in_serial;
+		dst    = in_dst;
+		src    = in_src;
+		offset = in_offset;
+	}
+
 	/****************************/
 	/* Print in graphviz format */
 	/****************************/
@@ -36,18 +54,26 @@ public:
 			std::string(" label = "      )+
 			std::string("\""             )+
 			sigma.    toString(          )+
+			std::string("|"              )+
+			std::string("str assign"     )+
+			std::string("|"              )+
 			sigma_tag.toString(          )+
 			std::string("\""             )+
 			std::string("]\n"            );
 	}
 	virtual const char *getKind(){ return "CFG_Node_Assign_Str"; }
 
-	CFG_Node_Assign_Str(Instruction *in_i) { i = in_i; }
-
 	virtual void Transform()
 	{
-		//readinfo[dst] = make_tuple(src,sigma.contains[src,
+		sigma_tag.str_constraints.eqs.insert(
+			new LinearConstraintEq(dst,src,offset));
 	}
+
+private:
+
+	std::string dst;
+	std::string src;
+	std::string offset;
 };
 
 #endif

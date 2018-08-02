@@ -1,6 +1,11 @@
 #ifndef __CFG_H__
 #define __CFG_H__
 
+/***********************/
+/* INCLUDE FILES :: IO */
+/***********************/
+#include <iomanip>
+
 /************************/
 /* INCLUDE FILES :: STL */
 /************************/
@@ -56,12 +61,11 @@ public:
 			{
 				if (u->serial != v->serial)
 				{
-					errs() << "now checking for edge exitance between: ";
-					errs() << "Node " << u->serial;
-					errs() << " and ";
-					errs() << "Node " << v->serial;
 					if (Successors(loop,u,v))
 					{
+						errs() << "Found ";
+						errs() << "(" << u->serial << "," << v->serial << ") ";
+						errs() << "is an edge\n";
 						u->succs.insert(v);
 					}
 				}
@@ -73,13 +77,23 @@ public:
 
 	void analyze()
 	{
-		Log();
-		do
-		{
+		//do
+		//{
+
+			Log();
 			Transform();
 			Update();
-		}
-		while (Changed());
+
+			Log();
+			//Transform();
+			//Update();
+
+			//Log();
+			//Transform();
+			//Update();
+
+		//}
+		//while (Changed());
 	}
 
 private:
@@ -135,18 +149,28 @@ private:
 		/*****************************/
 		myfile.open(filename);
 
+		/*****************************************************/
+		/* [4] Print graphviz dot header for directed graphs */
+		/*****************************************************/
+		myfile << "digraph {\n";
+
 		/*****************/
-		/* [4] Log nodes */
+		/* [5] Log nodes */
 		/*****************/
 		LogNodes();
 	
 		/*****************/
-		/* [5] Log nodes */
+		/* [6] Log edges */
 		/*****************/
-		// LogEdges();
+		LogEdges();
+
+		/*********************************/
+		/* [7] Print graphviz dot footer */
+		/*********************************/
+		myfile << "}\n";
 
 		/******************/
-		/* [6] Close file */
+		/* [8] Close file */
 		/******************/
 		myfile.close();
 	}
@@ -155,28 +179,20 @@ private:
 
 	void LogNodes()
 	{
-		int i=0;
-		int size = nodes.size();
-		errs() << "number of nodes is: " << nodes.size() << "\n";
-		for (auto it:nodes)
+		for (auto node:nodes)
 		{
-			errs() << "iteration " << i++	 << "\n";
-			CFG_Node *node = it;
-			errs() << "node serial is: " << node->serial << "\n";
-			
+			std::string node_description = node->toString();
+			errs() << "Now logging: " << "v" << node->serial << " " << "( " << node->getKind() << " )\n";
+			errs() << node_description << "\n\n";
 			/***********************/
 			/* [1] name every node */
 			/***********************/
-			myfile << "v" << node->serial;
-
-			errs() << node->getKind() << "\n\n";
-			errs() << node->toString() << "\n\n";
-			errs() << "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n\n";
+			myfile << "v" << node->serial << " ";
 						
 			/************************/
 			/* [2] print node label */
 			/************************/
-			myfile << " [ " << node->toString() << " ]\n";
+			myfile << node_description << "\n\n";
 		}
 	}
 
