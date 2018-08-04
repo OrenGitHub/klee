@@ -39,16 +39,9 @@ public:
 		{
 			for (auto v:nodes)
 			{
-				//if ((u->serial == 6) && (v->serial == 7))
+				if (Successors(loop,u,v))
 				{
-					llvm::errs() << "u name: " << u->i->getName().str();
-					llvm::errs() << "v name: " << v->i->getName().str();
-					llvm::errs() << "u kind: " << u->getKind();
-					llvm::errs() << "v kind: " << v->getKind();
-					if (Successors(loop,u,v))
-					{
-						u->succs.insert(v);
-					}
+					u->succs.insert(v);
 				}
 			}
 		}
@@ -210,31 +203,25 @@ private:
 	/***********************/
 	bool Successors(Loop *loop, CFG_Node *u, CFG_Node *v)
 	{
-		auto end   = loop->block_end();
-		auto begin = loop->block_begin();
+		auto block_end   = loop->block_end();
+		auto block_begin = loop->block_begin();
 
 		/******************************************************/
 		/* first add an edge between consecutive instructions */
 		/* of the same basic block                            */
 		/******************************************************/
-		for (auto it = begin; it != end; it++)
+		for (auto it = block_begin; it != block_end; it++)
 		{
-			for (auto inst = (*it)->begin(); inst != (*it)->end();)
+			auto inst_end   = (*it)->end();
+			auto inst_begin = (*it)->begin();
+			
+			for (auto inst = inst_begin; inst != inst_end;)
 			{
 				Instruction *i    = (Instruction *) inst++;
 				Instruction *next = (Instruction *) inst;
-				llvm::errs() << "         " << i   ->getName().str();
-				llvm::errs() << " ------> " << next->getName().str();
-				llvm::errs() << " ??? ";	
 				if ((u->i == i) && (v->i == next))
 				{
-					llvm::errs() << "Yes\n";
 					return true;
-				}
-				else
-				{
-					llvm::errs() << "No:\n";
-					
 				}
 			}
 		}
@@ -253,11 +240,9 @@ private:
 				{
 					if (u->i == i)
 					{
-						int n=(*it)->getTerminator()->getNumSuccessors();
-						for (int i=0;i<n;i++)
+						for (unsigned int n=0;n<(*it)->getTerminator()->getNumSuccessors();n++)
 						{
-							Instruction *next=(Instruction *) (*it)->getTerminator()->getSuccessor(i)->begin();
-							errs() << "first instruction of successor block: " << next->getName() << "\n";
+							Instruction *next=(Instruction *) (*it)->getTerminator()->getSuccessor(n)->begin();
 							if (v->i == next)
 							{
 								return true;
@@ -267,6 +252,39 @@ private:
 				}
 			}
 		}
+		
+		auto inst_end   = entry_point->end();
+		auto inst_begin = entry_point->begin();
+		for (auto inst = inst_begin; inst != inst_end;)
+		{
+			Instruction *i    = (Instruction *) inst++;
+			Instruction *next = (Instruction *) inst;
+			if ((u->i == i) && (v->i == next))
+			{
+				return true;
+			}
+		}
+
+		for (auto inst = inst_begin; inst != inst_end; inst++)
+		{
+			Instruction *i = (Instruction *) inst;
+			if (i == entry_point->getTerminator())
+			{
+				if (u->i == i)
+				{
+					for (unsigned int n=0;n<entry_point->getTerminator()->getNumSuccessors();n++)
+					{
+						Instruction *next=(Instruction *) entry_point->getTerminator()->getSuccessor(n)->begin();
+						if (v->i == next)
+						{
+							return true;
+						}
+					}
+				}
+			}
+		}
+
+
 		return false;
 	}
 

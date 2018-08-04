@@ -28,8 +28,10 @@
 /****************************/
 #include "CFG.h"
 #include "CFG_Node.h"
+#include "CFG_Node_Cmp.h"
 #include "CFG_Node_Read.h"
 #include "CFG_Node_Write.h"
+#include "CFG_Node_Branch.h"
 #include "CFG_Node_Assign_Int.h"
 #include "CFG_Node_Assign_Str.h"
 
@@ -52,16 +54,13 @@ struct StaticAnalyzer : public LoopPass
 	StaticAnalyzer():LoopPass(ID){}
 	BasicBlock *end = nullptr;
 
+	/**************************************************************/
+	/* This is needed to force opt to run the Alias Analysis pass */
+	/* before running this current pass                           */
+	/**************************************************************/
     void getAnalysisUsage(AnalysisUsage &AU) const override
     {
-		//AU.setPreservesCFG();
-		//AU.addRequired<DominatorTreeWrapperPass>();
 		AU.addRequired<AAResultsWrapperPass>();
-		//AU.addRequired<MemoryDependenceAnalysis>();
-		//AU.addRequired<TargetLibraryInfoWrapperPass>();
-		//AU.addPreserved<DominatorTreeWrapperPass>();
-		//AU.addPreserved<GlobalsAAWrapperPass>();
-		//AU.addPreserved<MemoryDependenceAnalysis>();
 	}
 
 	void PrintLoopLocation(Loop *loop)
@@ -198,7 +197,6 @@ struct StaticAnalyzer : public LoopPass
 
 	void PrintLoopFooter(Loop *loop,std::ofstream &myfile)
 	{
-		errs() << "GOT HERE" << "\n\n\n\n\n\n";
 		std::map<std::string,std::string> cache;
 		myfile << "\nBasic Block ( ";
 		myfile << end->getName().str();
@@ -217,14 +215,6 @@ struct StaticAnalyzer : public LoopPass
 		myfile << "\nBasic Block ( ";
 		myfile << name;
 		myfile << " )\n\n";
-	}
-
-	void PrintLoopInductionVariableProgress(Loop *loop,std::ofstream &myfile)
-	{
-		//if (((*it)->getName().str()) == std::string("do.body"))
-		//{
-		//	myfile << "    i(int) = i(int) + 1(int)\n";
-		//}
 	}
 
 	void ScanVars(Value *v)
@@ -301,7 +291,6 @@ struct StaticAnalyzer : public LoopPass
 			myfile <<  " ]"  ;
 			myfile <<  "\n"  ;
 			cache[dst] = std::string("[ ") + operand + std::string(" ]");
-			errs() << "now adding a CFG_Node_Read with serial == " << node_serial << "\n";
 			cfg.addNode(new CFG_Node_Read(node_serial++,i,dst,operand));
 		}
 		else
@@ -315,11 +304,12 @@ struct StaticAnalyzer : public LoopPass
 			if ((i->getType()->isIntegerTy(32)) ||
 				(i->getType()->isIntegerTy(64)))
 			{
-				errs() << "now adding a CFG_Node_Assign_Int with serial == " << node_serial << "\n";
 				cfg.addNode(new CFG_Node_Assign_Int(node_serial++,i,dst,operand));
 			}
-			errs() << "now adding a CFG_Node_Assign_Str with serial == " << node_serial << "\n";
-			cfg.addNode(new CFG_Node_Assign_Str(node_serial++,i,dst,operand));
+			else
+			{
+				cfg.addNode(new CFG_Node_Assign_Str(node_serial++,i,dst,operand));
+			}
 		}
 	}
 
@@ -433,19 +423,6 @@ struct StaticAnalyzer : public LoopPass
 		auto operand1 = i->getOperand(1);
 		std::string operand1Str = operand1->getName().str();
 
-		//if (AA->isNoAlias(operand0,operand1))
-		//{
-		//	errs() << "\n\n\n";
-		//	errs() << operand0->getName() << " and " << operand1Str << " are NOT aliased\n";
-		//	errs() << "\n\n\n";
-		//}
-		//else
-		//{
-		//	errs() << "\n\n\n";
-		//	errs() << operand0->getName() << " and " << operand1Str << " are aliased\n";
-		//	errs() << "\n\n\n";
-		//}
-
 		/****************************/
 		/* [4] Extract the operator */
 		/****************************/
@@ -485,6 +462,13 @@ struct StaticAnalyzer : public LoopPass
 		/* [7] Cache Icmp instruction */
 		/******************************/
 		cache[dst] = CacheName(operand0Str,cache) + op + CacheName(operand1Str,cache);
+		cfg.addNode(new CFG_Node_Cmp(
+			node_serial++,
+			i,
+			dst,
+			CacheName(operand0Str,cache),
+			op,
+			CacheName(operand1Str,cache)));
 	}
 
 	void Print_Br(BranchInst *i,std::ofstream &myfile,std::map<std::string,std::string> &cache)
@@ -503,9 +487,16 @@ struct StaticAnalyzer : public LoopPass
 			myfile << "    {\n";
 			myfile << "        goto " << second_label << "\n";
 			myfile << "    }\n";
+			cfg.addNode( new CFG_Node_Branch(
+				node_serial++,
+				i,
+				first_label,
+				CacheName(bool_value,cache),
+				second_label));
 		}
 		else
 		{
+			cfg.addNode( new CFG_Node_Branch(node_serial++,i,first_label));
 			myfile << "    " << "goto " << first_label << "\n";
 		}
 	}
@@ -679,37 +670,32 @@ struct StaticAnalyzer : public LoopPass
 			/* [4] Print Basic Block name */
 			/******************************/
 			PrintBasicBlockHeader((*it)->getName().str(),myfile);
-						
-			/****************************************************/
-			/* [5] Print synthesize loop induction variable i++ */
-			/****************************************************/
-			PrintLoopInductionVariableProgress(loop,myfile);
 			
 			/********************************************************/
-			/* [6] Iterate over the instructions of the basic block */
+			/* [5] Iterate over the instructions of the basic block */
 			/********************************************************/
 			for (auto inst = (*it)->begin(); inst != (*it)->end(); inst++)
 			{				
 				/******************************************/
-				/* [7] Extract dst temporary to temps set */
+				/* [5] Extract dst temporary to temps set */
 				/******************************************/
 				PrintInstruction((Instruction *) inst,myfile,cache);
 			}
 		}
 
 		/*************************/
-		/* [8] Print loop footer */
+		/* [7] Print loop footer */
 		/*************************/
 		PrintLoopFooter(loop,myfile);
 
 		/******************/
-		/* [9] Close file */
+		/* [8] Close file */
 		/******************/
 		myfile.close();
 
-		/*************************/
-		/* [10] Add edges to CFG */
-		/*************************/
+		/************************/
+		/* [9] Add edges to CFG */
+		/************************/
 		cfg.addEdges(loop);
 
 		/********************/
@@ -748,16 +734,10 @@ struct StaticAnalyzer : public LoopPass
 				temps.insert(inst->getName().str());
 			}
 		}
-
-		for (auto temp : temps)
-		{
-			errs() << temp << "\n";
-		}
-
 	}
 
 	virtual bool runOnLoop(Loop *loop, LPPassManager &LPM)
-	{		
+	{
 		AA = &getAnalysis<AAResultsWrapperPass>().getAAResults();
 		temps.clear();
 		
