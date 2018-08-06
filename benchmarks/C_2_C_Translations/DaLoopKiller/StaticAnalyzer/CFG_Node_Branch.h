@@ -46,11 +46,14 @@ std::string Extract_RHS(const std::string &s)
 std::string Extract_Op(const std::string &s)
 {
 	char p[128]={0};
-	char q[128]={0};
 	strcpy(p,s.c_str());
-	char *tmp = strrchr(p,' ');
-	strcpy(q,tmp+1);
-	return std::string(q);
+	
+	if (strstr(p,"!=")) return "!=";
+	if (strstr(p,"==")) return "==";
+	if (strstr(p,"<=")) return "<=";
+	if (strstr(p,"<" )) return "<" ;
+	if (strstr(p,">=")) return ">=";
+	if (strstr(p,">" )) return ">" ;
 }
 
 class CFG_Node_Branch : public CFG_Node {

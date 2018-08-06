@@ -290,7 +290,7 @@ struct StaticAnalyzer : public LoopPass
 			myfile << operand;
 			myfile <<  " ]"  ;
 			myfile <<  "\n"  ;
-			cache[dst] = std::string("[ ") + operand + std::string(" ]");
+			cache[dst] = std::string("[") + operand + std::string("]");
 			cfg.addNode(new CFG_Node_Read(node_serial++,i,dst,operand));
 		}
 		else
