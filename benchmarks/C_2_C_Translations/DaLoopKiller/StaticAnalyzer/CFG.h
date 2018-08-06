@@ -51,23 +51,15 @@ public:
 
 	void analyze()
 	{
-		//do
-		//{
-
+		const int MAX_NUM_ITERATIONS=10;
+		int n=0;
+		do
+		{
 			Log();
 			Transform();
 			Update();
-
-			Log();
-			//Transform();
-			//Update();
-
-			//Log();
-			//Transform();
-			//Update();
-
-		//}
-		//while (Changed());
+		}
+		while (Changed() && ((n++)<MAX_NUM_ITERATIONS));
 	}
 
 private:
@@ -99,7 +91,7 @@ private:
 	/* is observed in *ALL* nodes.                                       */
 	/*                                                                   */
 	/*********************************************************************/
-	bool Changed(){ return false; }
+	bool Changed(){ return true; }
 
 	/*********************************************************************/
 	/*                                                                   */
@@ -284,6 +276,38 @@ private:
 			}
 		}
 
+		{
+			auto inst_end   = exit_point->end();
+			auto inst_begin = exit_point->begin();
+			for (auto inst = inst_begin; inst != inst_end;)
+			{
+				Instruction *i    = (Instruction *) inst++;
+				Instruction *next = (Instruction *) inst;
+				if ((u->i == i) && (v->i == next))
+				{
+					return true;
+				}
+			}
+
+			for (auto inst = inst_begin; inst != inst_end; inst++)
+			{
+				Instruction *i = (Instruction *) inst;
+				if (i == exit_point->getTerminator())
+				{
+					if (u->i == i)
+					{
+						for (unsigned int n=0;n<exit_point->getTerminator()->getNumSuccessors();n++)
+						{
+							Instruction *next=(Instruction *) exit_point->getTerminator()->getSuccessor(n)->begin();
+							if (v->i == next)
+							{
+								return true;
+							}
+						}
+					}
+				}
+			}
+		}
 
 		return false;
 	}
@@ -314,10 +338,11 @@ private:
 
 public:
 
-	/*******************/
-	/* CFG entry point */
-	/*******************/
+	/***************************/
+	/* CFG entry + exit points */
+	/***************************/
 	BasicBlock *entry_point = nullptr;
+	BasicBlock *exit_point = nullptr;
 };
 
 #endif

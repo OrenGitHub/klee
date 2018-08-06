@@ -67,7 +67,15 @@ public:
 
 	virtual void Transform()
 	{
-		sigma_tag.str_constraints.eqs.insert(
+		/*****************************************/
+		/* copy the entire state sigma to sigma' */
+		/*****************************************/
+		sigma_tag = sigma;
+
+		/************************************************/
+		/* add the reslting equality from the assgnment */
+		/************************************************/
+		insert(sigma_tag.str_constraints.eqs,
 			new LinearConstraintEq(dst,src,offset));
 	}
 

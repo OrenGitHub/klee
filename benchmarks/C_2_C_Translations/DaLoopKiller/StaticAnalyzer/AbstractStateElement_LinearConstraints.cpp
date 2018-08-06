@@ -26,6 +26,7 @@ const std::string AbstractStateElement_LinearConstraints::toString()
 	for (auto eq :eqs ) { result += eq ->toString(); }
 	for (auto lt :lts ) { result += lt ->toString(); }
 	for (auto leq:leqs) { result += leq->toString(); }
+	for (auto neq:leqs) { result += neq->toString(); }
 	
 	return result;
 }
@@ -46,6 +47,19 @@ bool AbstractStateElement_LinearConstraints::operator==
 	return
 		(eqs  == that.eqs ) &&
 		(lts  == that.lts ) &&
+		(neqs == that.neqs) &&
 		(leqs == that.leqs);
 }
+
+void AbstractStateElement_LinearConstraints::join
+(
+	const AbstractStateElement_LinearConstraints &that
+)
+{
+	for (auto constraint:that.eqs ) { insert(eqs, constraint); }
+	for (auto constraint:that.lts ) { insert(lts, constraint); }
+	for (auto constraint:that.leqs) { insert(leqs,constraint); }
+	for (auto constraint:that.neqs) { insert(neqs,constraint); }
+}
+
 

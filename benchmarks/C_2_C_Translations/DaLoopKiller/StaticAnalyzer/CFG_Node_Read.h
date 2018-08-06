@@ -44,7 +44,11 @@ public:
 			std::string("\""             )+
 			sigma.    toString(          )+
 			std::string("|"              )+
-			std::string("read"           )+
+			dst                           +
+			std::string(" = ")            +
+			std::string("[ " )            +
+			src                           +
+			std::string(" ]" )            +
 			std::string("|"              )+
 			sigma_tag.toString(          )+
 			std::string("\""             )+
@@ -55,7 +59,10 @@ public:
 
 	virtual void Transform()
 	{
-		//readinfo[dst] = make_tuple(src,sigma.contains[src,
+		/*****************************************/
+		/* copy the entire state sigma to sigma' */
+		/*****************************************/
+		sigma_tag = sigma;		
 	}
 	
 private:

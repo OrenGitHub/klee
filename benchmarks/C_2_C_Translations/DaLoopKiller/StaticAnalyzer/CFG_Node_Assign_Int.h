@@ -75,10 +75,20 @@ public:
 
 	virtual void Transform()
 	{
-		sigma_tag.int_constraints.eqs.insert(
-			new LinearConstraintEq(dst,src,offset));		
+		/*****************************************/
+		/* copy the entire state sigma to sigma' */
+		/*****************************************/
+		sigma_tag = sigma;
+
+		/************************************************/
+		/* add the reslting equality from the assgnment */
+		/************************************************/
+		insert(sigma_tag.int_constraints.eqs,
+			new LinearConstraintEq(dst,src,offset));
 	}
+
 private:
+
 	string dst;
 	string src;
 	string offset;

@@ -79,7 +79,7 @@ public:
 	/**************/
 	std::set<CFG_Node *> succs;
 
-protected:
+public:
 
 	/***********************************/
 	/* Abstract state "before" = sigma */

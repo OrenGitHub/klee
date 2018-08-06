@@ -47,8 +47,7 @@ public:
 	/****************************************/
 	/* The elements make the abstract state */
 	/****************************************/
-	AbstractStateElement_LinearConstraints str_constraints;
-	AbstractStateElement_LinearConstraints int_constraints;
+	AbstractStateElement_LinearConstraints constraints;
 	AbstractStateElement_Readinfo          readinfo;
 };
 

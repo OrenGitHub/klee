@@ -32,8 +32,7 @@
 #include "CFG_Node_Read.h"
 #include "CFG_Node_Write.h"
 #include "CFG_Node_Branch.h"
-#include "CFG_Node_Assign_Int.h"
-#include "CFG_Node_Assign_Str.h"
+#include "CFG_Node_Assign.h"
 
 /**********************/
 /* USING NAMESPACE(S) */
@@ -124,6 +123,7 @@ struct StaticAnalyzer : public LoopPass
 		}
 		else
 		{
+			cfg.exit_point = end;
 			return false;
 		}
 	}
@@ -301,15 +301,7 @@ struct StaticAnalyzer : public LoopPass
 			myfile << operand;
 			myfile <<  "\n"  ;
 
-			if ((i->getType()->isIntegerTy(32)) ||
-				(i->getType()->isIntegerTy(64)))
-			{
-				cfg.addNode(new CFG_Node_Assign_Int(node_serial++,i,dst,operand));
-			}
-			else
-			{
-				cfg.addNode(new CFG_Node_Assign_Str(node_serial++,i,dst,operand));
-			}
+			cfg.addNode(new CFG_Node_Assign(node_serial++,i,dst,operand));
 		}
 	}
 
@@ -355,7 +347,7 @@ struct StaticAnalyzer : public LoopPass
 			myfile << "\n";
 			cache[dst] = operand;
 
-			cfg.addNode(new CFG_Node_Assign_Str(node_serial++,i,dst,operand));
+			cfg.addNode(new CFG_Node_Assign(node_serial++,i,dst,operand));
 		}
 		else
 		{
@@ -399,7 +391,7 @@ struct StaticAnalyzer : public LoopPass
 		myfile << offsetStr ;
 		myfile <<   "\n"    ;
 		
-		cfg.addNode(new CFG_Node_Assign_Str(node_serial++,i,dst,ptr,offsetStr));
+		cfg.addNode(new CFG_Node_Assign(node_serial++,i,dst,ptr,offsetStr));
 		
 		cache[dst] = CacheName(ptr,cache) + std::string(" + ") + CacheName(offsetStr,cache);
 	}
@@ -428,17 +420,17 @@ struct StaticAnalyzer : public LoopPass
 		/****************************/
 		std::string op;
 		switch (i->getPredicate()) {
-		case (32): op = " == "; break;
-		case (33): op = " != "; break;
-		case (34): op = " > " ; break;
-		case (35): op = " >= "; break;
-		case (36): op = " < " ; break;
-		case (37): op = " <= "; break;
-		case (38): op = " > " ; break;
-		case (39): op = " >= "; break;
-		case (40): op = " < " ; break;
-		case (41): op = " <= "; break;
-		default  : op = "    "; break;
+		case (32): op = " == " ; break;
+		case (33): op = " != " ; break;
+		case (34): op = " \\> "; break;
+		case (35): op = " >= " ; break;
+		case (36): op = " \\< "; break;
+		case (37): op = " <= " ; break;
+		case (38): op = " \\> "; break;
+		case (39): op = " >= " ; break;
+		case (40): op = " \\< "; break;
+		case (41): op = " <= " ; break;
+		default  : op = "    " ; break;
 		}
 		
 		/**********************************/
@@ -527,7 +519,7 @@ struct StaticAnalyzer : public LoopPass
 		/******************************/
 		cache[dst] = CacheName(operand,cache);
 		
-		cfg.addNode(new CFG_Node_Assign_Int(node_serial++,i,dst,operand));
+		cfg.addNode(new CFG_Node_Assign(node_serial++,i,dst,operand));
 	}
 
 	std::string Value2String(Value *v)

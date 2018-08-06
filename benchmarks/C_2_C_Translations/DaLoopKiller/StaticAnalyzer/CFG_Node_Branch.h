@@ -6,6 +6,7 @@
 /*************************************/
 #include <stdlib.h>
 #include <memory.h>
+#include <string.h>
 
 /****************************/
 /* INCLUDE FILES :: PROJECT */
@@ -22,6 +23,35 @@ using namespace std;
 /* NAMESPACE ::std */
 /*******************/
 using namespace llvm;
+
+std::string Extract_LHS(const std::string &s)
+{
+	char p[128]={0};
+	strcpy(p,s.c_str());
+	char *tmp = strchr(p,' ');
+	*tmp=0;
+	return std::string(p);
+}
+
+std::string Extract_RHS(const std::string &s)
+{
+	char p[128]={0};
+	char q[128]={0};
+	strcpy(p,s.c_str());
+	char *tmp = strrchr(p,' ');
+	strcpy(q,tmp+1);
+	return std::string(q);
+}
+
+std::string Extract_Op(const std::string &s)
+{
+	char p[128]={0};
+	char q[128]={0};
+	strcpy(p,s.c_str());
+	char *tmp = strrchr(p,' ');
+	strcpy(q,tmp+1);
+	return std::string(q);
+}
 
 class CFG_Node_Branch : public CFG_Node {
 public:
@@ -53,14 +83,14 @@ public:
 		else
 		{
 			msg =
-			std::string("if ( "        )+
-			condition                   +
-			std::string(" ) \\{ goto " )+
-			first_label                 +
-			std::string(" \\}\\n"      )+
-			std::string("else \\{ goto")+
-			second_label                +
-			std::string(" \\}"         );
+			std::string("if ( "         )+
+			condition                    +
+			std::string(" ) \\{ goto "  )+
+			first_label                  +
+			std::string(" \\}\\n"       )+
+			std::string("else \\{ goto ")+
+			second_label                 +
+			std::string(" \\}"          );
 		}
 		return
 			std::string("["              )+
@@ -80,9 +110,71 @@ public:
 
 	virtual void Transform()
 	{
-		//sigma_tag.str_constraints.eqs.insert(
-		//	new LinearConstraintEq(dst,src,offset));
+		sigma_tag = sigma;
 	}
+	
+	virtual void Update()
+	{
+		/****************************************************************/
+		/* if this is not a conditional branch then eveything is simple */
+		/****************************************************************/
+		if (condition == "")
+		{
+			for (auto succ:succs)
+			{
+				succ->sigma.join(sigma_tag);
+				return;
+			}
+		}
+		/******************************************/
+		/* Update successrs according to conditon */
+		/******************************************/
+		for (auto succ:succs)
+		{
+			bool condition_holds;			
+
+			if (succ->i->getParent()->getName().str() == first_label)
+			{
+				condition_holds = true;
+			}
+			if (succ->i->getParent()->getName().str() == second_label)
+			{
+				condition_holds = false;
+			}
+
+			auto sigma_tag_temp = sigma_tag;
+
+			std::string op  = Extract_Op( condition);
+			std::string LHS = Extract_LHS(condition);
+			std::string RHS = Extract_RHS(condition);
+
+			if (condition_holds)
+			{
+				if (op == "==") { insert(sigma_tag_temp.constraints.eqs, new LinearConstraintEq( LHS,RHS)); }
+				if (op == "!=") { insert(sigma_tag_temp.constraints.neqs,new LinearConstraintNeq(LHS,RHS)); }
+				if (op == "<=") { insert(sigma_tag_temp.constraints.leqs,new LinearConstraintLeq(LHS,RHS)); }
+				if (op == "<" ) { insert(sigma_tag_temp.constraints.lts, new LinearConstraintLt( LHS,RHS)); }
+				if (op == ">=") { insert(sigma_tag_temp.constraints.leqs,new LinearConstraintLeq(RHS,LHS)); }
+				if (op == ">" ) { insert(sigma_tag_temp.constraints.lts, new LinearConstraintLt( RHS,LHS)); }
+			}
+			else
+			{
+				if (op == "==") { insert(sigma_tag_temp.constraints.neqs,new LinearConstraintNeq(LHS,RHS)); }
+				if (op == "!=") { insert(sigma_tag_temp.constraints.eqs, new LinearConstraintEq( LHS,RHS)); }
+				if (op == "<=") { insert(sigma_tag_temp.constraints.lts, new LinearConstraintLt( RHS,LHS)); }
+				if (op == "<" ) { insert(sigma_tag_temp.constraints.leqs,new LinearConstraintLeq(RHS,LHS)); }
+				if (op == ">=") { insert(sigma_tag_temp.constraints.lts, new LinearConstraintLt( LHS,RHS)); }
+				if (op == ">" ) { insert(sigma_tag_temp.constraints.leqs,new LinearConstraintLeq(LHS,RHS)); }
+			}
+
+			/********************************************************/
+			/* the abstrac state sigma_tag_temp is now updated with */
+			/* either the condition or ~condition according to succ */			
+			/********************************************************/
+			succ->sigma.join(sigma_tag_temp);
+		}
+	}
+	
 
 private:
 

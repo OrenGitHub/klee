@@ -1,5 +1,5 @@
-#ifndef __CFG_NODE_CMP_H__
-#define __CFG_NODE_CMP_H__
+#ifndef __CFG_NODE_ASSIGN_H__
+#define __CFG_NODE_ASSIGN_H__
 
 /*************************************/
 /* INCLUDE FILES :: standard library */
@@ -11,6 +11,7 @@
 /* INCLUDE FILES :: PROJECT */
 /****************************/
 #include "CFG_Node.h"
+#include "AbstractStateElement_LinearConstraints.h"
 
 /*******************/
 /* NAMESPACE ::std */
@@ -22,23 +23,31 @@ using namespace std;
 /*******************/
 using namespace llvm;
 
-class CFG_Node_Cmp : public CFG_Node {
+/****************************/
+/* CLASS :: CFG_Node_Assign */
+/****************************/
+class CFG_Node_Assign : public CFG_Node {
 public:
+	/*********************************/
+	/* Import base class constructor */
+	/*********************************/
+	using CFG_Node::CFG_Node;
 
-	CFG_Node_Cmp(
+	/***************/
+	/* Constructor */
+	/***************/
+	CFG_Node_Assign(
 		int in_serial,
 		Instruction *in_i,
 		const std::string &in_dst,
-		const std::string &in_operand0,
-		const std::string &in_op,
-		const std::string &in_operand1)
+		const std::string &in_src,
+		const std::string &in_offset="")
 	{
-		i        = in_i;
-		serial   = in_serial;
-		dst      = in_dst;
-		operand0 = in_operand0;
-		op       = in_op;
-		operand1 = in_operand1;
+		i      = in_i;
+		serial = in_serial;
+		dst    = in_dst;
+		src    = in_src;
+		offset = in_offset;
 	}
 
 	/****************************/
@@ -54,17 +63,13 @@ public:
 			std::string("\""             )+
 			sigma.    toString(          )+
 			std::string("|"              )+
-			//dst                         +
-			//std::string(" = ")          +
-			//operand0                    +
-			//op                          +
-			//operand1                    +
+			std::string("assign"         )+
 			std::string("|"              )+
 			sigma_tag.toString(          )+
 			std::string("\""             )+
 			std::string("]\n"            );
 	}
-	virtual const char *getKind(){ return "CFG_Node_Branch"; }
+	virtual const char *getKind(){ return "CFG_Node_Assign"; }
 
 	virtual void Transform()
 	{
@@ -72,14 +77,19 @@ public:
 		/* copy the entire state sigma to sigma' */
 		/*****************************************/
 		sigma_tag = sigma;
+
+		/************************************************/
+		/* add the reslting equality from the assgnment */
+		/************************************************/
+		insert(sigma_tag.constraints.eqs,
+			new LinearConstraintEq(dst,src,offset));
 	}
 
 private:
 
 	std::string dst;
-	std::string operand0;
-	std::string op;
-	std::string operand1;
+	std::string src;
+	std::string offset;
 };
 
 #endif
