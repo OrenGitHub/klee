@@ -105,6 +105,7 @@ public:
 	bool operator==(const AbstractStateElement_Readinfo &that);
 	void join(const AbstractStateElement_Readinfo &that);
 	virtual const std::string toString();
+	virtual void clear() { readinfo.clear(); }
 
 public:
 	std::map<cvar,std::pair<svar,CharSet *> > readinfo;

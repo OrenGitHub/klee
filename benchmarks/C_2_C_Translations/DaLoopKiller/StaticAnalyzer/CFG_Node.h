@@ -51,7 +51,7 @@ public:
 	{
 		for (auto succ:succs)
 		{
-			succ->sigma.join(sigma_tag);
+			succ->sigma_tag.join(sigma_tag);
 		}
 	}
 

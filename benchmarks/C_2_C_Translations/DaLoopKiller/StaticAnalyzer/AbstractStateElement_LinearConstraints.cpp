@@ -26,7 +26,7 @@ const std::string AbstractStateElement_LinearConstraints::toString()
 	for (auto eq :eqs ) { result += eq ->toString(); }
 	for (auto lt :lts ) { result += lt ->toString(); }
 	for (auto leq:leqs) { result += leq->toString(); }
-	for (auto neq:leqs) { result += neq->toString(); }
+	for (auto neq:neqs) { result += neq->toString(); }
 	
 	return result;
 }

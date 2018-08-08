@@ -106,6 +106,13 @@ public:
 	virtual const std::string toString();
 	void join(const AbstractStateElement_LinearConstraints &that);
 	bool operator==(const AbstractStateElement_LinearConstraints &that);
+	virtual void clear()
+	{
+		eqs. clear();
+		lts. clear();
+		leqs.clear();
+		neqs.clear();
+	}
 
 public:
 	std::set<LinearConstraintEq  * > eqs;

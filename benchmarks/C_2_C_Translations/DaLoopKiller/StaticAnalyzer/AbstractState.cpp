@@ -18,6 +18,15 @@
 #include "AbstractStateElement_Readinfo.h"
 #include "AbstractStateElement_LinearConstraints.h"
 
+/**************************/
+/* AbstractState :: clear */
+/**************************/
+void AbstractState::clear()
+{
+	constraints.clear();
+	readinfo   .clear();
+}
+
 /*****************************/
 /* AbstractState :: toString */
 /*****************************/
@@ -36,6 +45,11 @@ bool AbstractState::operator==(const AbstractState &that)
 	return
 		(constraints == that.constraints) &&
 		(readinfo    == that.readinfo);
+}
+
+bool AbstractState::operator!=(const AbstractState &that)
+{
+	return !((*this) == that);
 }
 
 /*************************/

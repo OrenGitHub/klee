@@ -32,6 +32,14 @@ using namespace llvm;
 class CFG {
 public:
 
+	void addExternalVars(std::set<Value *> vars)
+	{
+		external_vars = vars;
+		//for (auto external_var:external_vars)
+		//{
+		//	errs() << external_var->getName().str() << "\n";
+		//}
+	}
 	void addNode(CFG_Node *u){ nodes.insert(u); }
 	void addEdges(Loop *loop)
 	{
@@ -56,6 +64,7 @@ public:
 		do
 		{
 			Log();
+			Copy();
 			Transform();
 			Update();
 		}
@@ -91,7 +100,22 @@ private:
 	/* is observed in *ALL* nodes.                                       */
 	/*                                                                   */
 	/*********************************************************************/
-	bool Changed(){ return true; }
+	bool Changed()
+	{
+		for (auto node:nodes)
+		{
+			if (node->sigma != node->sigma_tag)
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/*******************************************************************/
+	/*                                                                 */
+	/*******************************************************************/
+	void Copy(){ for (auto node:nodes){ node->sigma = node->sigma_tag; }}
 
 	/*********************************************************************/
 	/*                                                                   */
@@ -343,6 +367,10 @@ public:
 	/***************************/
 	BasicBlock *entry_point = nullptr;
 	BasicBlock *exit_point = nullptr;
+	
+private:
+
+	std::set<Value *> external_vars;
 };
 
 #endif

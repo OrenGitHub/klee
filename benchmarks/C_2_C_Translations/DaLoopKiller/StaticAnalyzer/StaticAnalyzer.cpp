@@ -227,11 +227,11 @@ struct StaticAnalyzer : public LoopPass
 			}
 			else if (v->getType()->isIntegerTy(32))
 			{
-				external_ivars.insert(v->getName().str());
+				external_ivars.insert(v);
 			}
 			else if (v->getType()->isIntegerTy(64))
 			{
-				external_ivars.insert(v->getName().str());
+				external_ivars.insert(v);
 			}
 			else if (v->getType()->isPointerTy())
 			{
@@ -251,7 +251,7 @@ struct StaticAnalyzer : public LoopPass
 				}
 				else if (p1->getElementType()->isIntegerTy(32))
 				{
-					external_ivars.insert(v->getName().str());
+					external_ivars.insert(v);
 				}
 				else
 				{
@@ -690,6 +690,12 @@ struct StaticAnalyzer : public LoopPass
 		/************************/
 		cfg.addEdges(loop);
 
+		/**************************/
+		/* [10] Set external vars */
+		/**************************/
+		cfg.addExternalVars(external_svars);
+		cfg.addExternalVars(external_ivars);
+
 		/********************/
 		/* [11] Analyze CFG */
 		/********************/
@@ -714,7 +720,7 @@ struct StaticAnalyzer : public LoopPass
 	std::set<std::string> internal_cvars;
 
 	std::set<Value *> external_svars;
-	std::set<std::string> external_ivars;
+	std::set<Value *> external_ivars;
 	std::set<std::string> external_cvars;
 
 	void Identify_Loop_Temporaries(Loop *loop)
@@ -756,7 +762,7 @@ struct StaticAnalyzer : public LoopPass
 		/*************************************/
 		/* [5] Print participating variables */
 		/*************************************/
-		//errs() << "external svars:\n"; for (auto external_svar : external_svars) { errs() << external_svar->getName().str() << "\n"; }
+		errs() << "external svars:\n"; for (auto external_svar : external_svars) { errs() << external_svar->getName().str() << "\n"; }
 		//errs() << "external ivars:\n"; for (auto external_ivar : external_ivars) { errs() << external_ivar << "\n"; }
 		//errs() << "external cvars:\n"; for (auto external_cvar : external_cvars) { errs() << external_cvar << "\n"; }
 
