@@ -81,11 +81,9 @@ compile_and_run:
 	#-use-query-log=solver:smt2                     \
 	# gdb -x ./myGdbScripts/gdbCommands.txt --args  \
 	${KLEE}                                         \
-	--libc=uclibc                                   \
 	--posix-runtime                                 \
 	-solver-backend=z3                              \
 	-use-independent-solver=0                       \
-	-constants-as-ABs                               \
 	-use-cex-cache=0                                \
 	-use-query-log=solver:kquery                    \
 	-debug-z3-dump-queries=Z3queries.txt            \
