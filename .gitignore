@@ -110,4 +110,9 @@ lit.site.cfg
 autoconf/aclocal.m4
 autoconf/autom4te.cache/
 autom4te.cache/
+###################################
+#                                 #
+# Static Analysis Temporary Files #
+#                                 #
+###################################
 benchmarks/C_2_C_Translations/DaLoopKiller/LOOPS_SUMMARIES/LOOP_OUTPUT_*
