@@ -5,6 +5,7 @@
 /* INCLUDE FILES :: IO */
 /***********************/
 #include <iomanip>
+#include <fstream>
 
 /************************/
 /* INCLUDE FILES :: STL */
@@ -26,57 +27,32 @@ using namespace std;
 /*********************/
 using namespace llvm;
 
+extern std::set<Value *> external_vars;
+
 /*************************************/
 /* CLASS :: CFG (Control Flow Graph) */
 /*************************************/
 class CFG {
 public:
 
-	void addExternalVars(std::set<Value *> vars)
-	{
-		external_vars = vars;
-		//for (auto external_var:external_vars)
-		//{
-		//	errs() << external_var->getName().str() << "\n";
-		//}
-	}
-	void addNode(CFG_Node *u){ nodes.insert(u); }
-	void addEdges(Loop *loop)
-	{
-		for (auto u:nodes)
-		{
-			for (auto v:nodes)
-			{
-				if (Successors(loop,u,v))
-				{
-					u->succs.insert(v);
-				}
-			}
-		}
-	}
-
-public:
-
 	void analyze()
 	{
-		const int MAX_NUM_ITERATIONS=10;
-		int n=0;
-		do
+		int num_iterations=0;
+		const int MAX_NUM_ITERATIONS=30;
+		while ((num_iterations++) < MAX_NUM_ITERATIONS)
 		{
-			Log();
-			Copy();
-			Transform();
-			Update();
+			Transform(); Log();
+			Update();    Log();
+			Copy();      Log();
 		}
-		while (Changed() && ((n++)<MAX_NUM_ITERATIONS));
 	}
 
 private:
 
 	/*******************************************************************/
 	/*                                                                 */
-	/*                     instruction                                 */
-	/* Each node (sigma -----------------> sigma')                     */
+	/*                        instruction                              */
+	/* Each node (sigma_in -----------------> sigma_out')              */
 	/*                                                                 */
 	/* makes a transformation according to the instruction it contains */
 	/* The transformation uses the "before" state sigma, and returns   */
@@ -104,239 +80,40 @@ private:
 	{
 		for (auto node:nodes)
 		{
-			if (node->sigma != node->sigma_tag)
-			{
-				return true;
-			}
+			if (node->Changed()) { return true; }
 		}
 		return false;
 	}
 
-	/*******************************************************************/
-	/*                                                                 */
-	/*******************************************************************/
-	void Copy(){ for (auto node:nodes){ node->sigma = node->sigma_tag; }}
-
-	/*********************************************************************/
-	/*                                                                   */
-	/* Log the entire CFG with its abstract states sigma and sigma'      */
-	/*                                                                   */
-	/*********************************************************************/
-	void Log()
+	/**************************************/
+	/* Copy: sigma_in  <--- sigma_in_tag  */
+	/* Copy: sigma_out <--- sigma_out_tag */
+	/**************************************/
+	void Copy()
 	{
-		/********************************************************/
-		/* [1] Each Analysis step is printed to a separate file */
-		/********************************************************/
-		std::string strSerial = std::to_string(intSerial++);
-
-		/******************************************/
-		/* [2] Create a new serial-based filename */
-		/******************************************/
-		std::string filename = dir+strSerial+std::string(".txt");
-
-		/*****************************/
-		/* [3] Open file for writing */
-		/*****************************/
-		myfile.open(filename);
-
-		/*****************************************************/
-		/* [4] Print graphviz dot header for directed graphs */
-		/*****************************************************/
-		myfile << "/***********/\n";
-		myfile << "/* DIGRAPH */\n";
-		myfile << "/***********/\n";
-		myfile << "digraph\n{\n";
-		myfile << "    /***********/\n";
-		myfile << "    /* RANKDIR */\n";
-		myfile << "    /***********/\n";
-		myfile << "    rankdir = UD\n\n";
-
-		/*****************/
-		/* [5] Log nodes */
-		/*****************/
-		myfile << "    /*********/\n";
-		myfile << "    /* NODES */\n";
-		myfile << "    /*********/\n";
-		LogNodes();
-	
-		/*****************/
-		/* [6] Log edges */
-		/*****************/
-		myfile << "\n";
-		myfile << "    /*********/\n";
-		myfile << "    /* EDGES */\n";
-		myfile << "    /*********/\n";
-		LogEdges();
-
-		/*********************************/
-		/* [7] Print graphviz dot footer */
-		/*********************************/
-		myfile << "}\n";
-
-		/******************/
-		/* [8] Close file */
-		/******************/
-		myfile.close();
-	}
-
-private:
-
-	void LogNodes()
-	{
-		for (auto node:nodes)
+		for (auto n:nodes)
 		{
-			/***********************/
-			/* [1] CFG node serial */
-			/***********************/
-			myfile << "    " << "v" << setw(2) << setfill('0') << node->serial << " ";
-						
-			/******************************/
-			/* [2] print node description */
-			/******************************/
-			std::string node_description = node->toString();
-			myfile   << node_description;
+			n->sigma_in  = n->sigma_in_tag;
+			n->sigma_out = n->sigma_out_tag;
 		}
 	}
 
-	void LogEdges()
-	{
-		for (auto u:nodes)
-		{
-			for (auto v:u->succs)
-			{
-				myfile << "    ";
-				myfile << "v" << setw(2) << setfill('0') << u->serial << " -> ";
-				myfile << "v" << setw(2) << setfill('0') << v->serial << "\n";					
-			}					
-		}
-	}
-
+	/****************************************************************/
+	/*                                                              */
+	/* Log the entire CFG with its abstract states sigma and sigma' */
+	/*                                                              */
+	/****************************************************************/
+	void Log();
 
 private:
+
+	void LogNodes();
+	void LogEdges();
 
 	/***********************/
 	/* Successors function */
 	/***********************/
-	bool Successors(Loop *loop, CFG_Node *u, CFG_Node *v)
-	{
-		auto block_end   = loop->block_end();
-		auto block_begin = loop->block_begin();
-
-		/******************************************************/
-		/* first add an edge between consecutive instructions */
-		/* of the same basic block                            */
-		/******************************************************/
-		for (auto it = block_begin; it != block_end; it++)
-		{
-			auto inst_end   = (*it)->end();
-			auto inst_begin = (*it)->begin();
-			
-			for (auto inst = inst_begin; inst != inst_end;)
-			{
-				Instruction *i    = (Instruction *) inst++;
-				Instruction *next = (Instruction *) inst;
-				if ((u->i == i) && (v->i == next))
-				{
-					return true;
-				}
-			}
-		}
-		
-		/*******************************************************/
-		/* then add an edge between the terminator instruction */
-		/* of every basic block to the first instruction of    */
-		/* its successor(s) basic block(s)                     */
-		/*******************************************************/
-		for (auto it = loop->block_begin(); it != loop->block_end(); it++)
-		{
-			for (auto inst = (*it)->begin(); inst != (*it)->end(); inst++)
-			{
-				Instruction *i = (Instruction *) inst;
-				if (i == (*it)->getTerminator())
-				{
-					if (u->i == i)
-					{
-						for (unsigned int n=0;n<(*it)->getTerminator()->getNumSuccessors();n++)
-						{
-							Instruction *next=(Instruction *) (*it)->getTerminator()->getSuccessor(n)->begin();
-							if (v->i == next)
-							{
-								return true;
-							}
-						}
-					}
-				}
-			}
-		}
-		
-		auto inst_end   = entry_point->end();
-		auto inst_begin = entry_point->begin();
-		for (auto inst = inst_begin; inst != inst_end;)
-		{
-			Instruction *i    = (Instruction *) inst++;
-			Instruction *next = (Instruction *) inst;
-			if ((u->i == i) && (v->i == next))
-			{
-				return true;
-			}
-		}
-
-		for (auto inst = inst_begin; inst != inst_end; inst++)
-		{
-			Instruction *i = (Instruction *) inst;
-			if (i == entry_point->getTerminator())
-			{
-				if (u->i == i)
-				{
-					for (unsigned int n=0;n<entry_point->getTerminator()->getNumSuccessors();n++)
-					{
-						Instruction *next=(Instruction *) entry_point->getTerminator()->getSuccessor(n)->begin();
-						if (v->i == next)
-						{
-							return true;
-						}
-					}
-				}
-			}
-		}
-
-		{
-			auto inst_end   = exit_point->end();
-			auto inst_begin = exit_point->begin();
-			for (auto inst = inst_begin; inst != inst_end;)
-			{
-				Instruction *i    = (Instruction *) inst++;
-				Instruction *next = (Instruction *) inst;
-				if ((u->i == i) && (v->i == next))
-				{
-					return true;
-				}
-			}
-
-			for (auto inst = inst_begin; inst != inst_end; inst++)
-			{
-				Instruction *i = (Instruction *) inst;
-				if (i == exit_point->getTerminator())
-				{
-					if (u->i == i)
-					{
-						for (unsigned int n=0;n<exit_point->getTerminator()->getNumSuccessors();n++)
-						{
-							Instruction *next=(Instruction *) exit_point->getTerminator()->getSuccessor(n)->begin();
-							if (v->i == next)
-							{
-								return true;
-							}
-						}
-					}
-				}
-			}
-		}
-
-		return false;
-	}
-
-private:
+	bool Successors(Loop *loop, CFG_Node *u, CFG_Node *v);
 
 	/***************************************************************/
 	/* serial is for creating a graphviz log of each analysis step */
@@ -368,9 +145,17 @@ public:
 	BasicBlock *entry_point = nullptr;
 	BasicBlock *exit_point = nullptr;
 	
-private:
+public:
 
-	std::set<Value *> external_vars;
+	void addExternalVars(std::set<Value *> vars)
+	{
+		for (auto var:vars)
+		{
+			external_vars.insert(var);
+		}
+	}
+	void addNode(CFG_Node *u);
+	void addEdges(Loop *loop);
 };
 
 #endif

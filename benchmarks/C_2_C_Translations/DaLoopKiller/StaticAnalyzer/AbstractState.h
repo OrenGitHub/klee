@@ -1,9 +1,6 @@
 #ifndef __ABSTRACT_STATE_H__
 #define __ABSTRACT_STATE_H__
 
-/*****************************/
-/* FILENAME: AbstractState.h */
-/*****************************/
 /************************/
 /* INCLUDE FILES :: STL */
 /************************/
@@ -15,6 +12,7 @@
 /****************************/
 #include "AbstractStateElement.h"
 #include "AbstractStateElement_Readinfo.h"
+#include "AbstractStateElement_Contains.h"
 #include "AbstractStateElement_LinearConstraints.h"
 
 /***********************************************/
@@ -55,6 +53,7 @@ public:
 	/****************************************/
 	AbstractStateElement_LinearConstraints constraints;
 	AbstractStateElement_Readinfo          readinfo;
+	AbstractStateElement_Contains          contains;
 };
 
 #endif

@@ -28,6 +28,7 @@
 /****************************/
 #include "CFG.h"
 #include "CFG_Node.h"
+#include "CFG_Node_Nop.h"
 #include "CFG_Node_Cmp.h"
 #include "CFG_Node_Read.h"
 #include "CFG_Node_Write.h"
@@ -290,7 +291,7 @@ struct StaticAnalyzer : public LoopPass
 			myfile << operand;
 			myfile <<  " ]"  ;
 			myfile <<  "\n"  ;
-			cache[dst] = std::string("[") + operand + std::string("]");
+			// cache[dst] = std::string("[") + operand + std::string("]");
 			cfg.addNode(new CFG_Node_Read(node_serial++,i,dst,operand));
 		}
 		else
@@ -454,13 +455,7 @@ struct StaticAnalyzer : public LoopPass
 		/* [7] Cache Icmp instruction */
 		/******************************/
 		cache[dst] = CacheName(operand0Str,cache) + op + CacheName(operand1Str,cache);
-		cfg.addNode(new CFG_Node_Cmp(
-			node_serial++,
-			i,
-			dst,
-			CacheName(operand0Str,cache),
-			op,
-			CacheName(operand1Str,cache)));
+		cfg.addNode(new CFG_Node_Nop(node_serial++,i));
 	}
 
 	void Print_Br(BranchInst *i,std::ofstream &myfile,std::map<std::string,std::string> &cache)
@@ -519,7 +514,7 @@ struct StaticAnalyzer : public LoopPass
 		/******************************/
 		cache[dst] = CacheName(operand,cache);
 		
-		cfg.addNode(new CFG_Node_Assign(node_serial++,i,dst,operand));
+		cfg.addNode(new CFG_Node_Nop(node_serial++,i));
 	}
 
 	std::string Value2String(Value *v)

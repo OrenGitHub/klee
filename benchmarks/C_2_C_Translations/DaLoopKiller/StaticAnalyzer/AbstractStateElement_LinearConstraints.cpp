@@ -9,6 +9,7 @@
 /****************************/
 /* INCLUDE FILES :: PROJECT */
 /****************************/
+#include "CFG.h"
 #include "AbstractStateElement_LinearConstraints.h"
 
 /******************************************************/
@@ -57,9 +58,97 @@ void AbstractStateElement_LinearConstraints::join
 )
 {
 	for (auto constraint:that.eqs ) { insert(eqs, constraint); }
-	for (auto constraint:that.lts ) { insert(lts, constraint); }
-	for (auto constraint:that.leqs) { insert(leqs,constraint); }
+	//for (auto constraint:that.lts ) { insert(lts, constraint); }
+	//for (auto constraint:that.leqs) { insert(leqs,constraint); }
 	for (auto constraint:that.neqs) { insert(neqs,constraint); }
+}
+
+void assume(AbstractStateElement_LinearConstraints *constraints,LinearConstraintEq *constraint)
+{
+	auto end   = constraints->neqs.end();
+	auto begin = constraints->neqs.begin();
+	for (auto c=begin;c!=end;)
+	{
+		if ((*c)->LHS == constraint->LHS)
+		{
+			c=constraints->neqs.erase(c);
+		}
+		else
+		{
+			c++;
+		}
+	}
+}
+
+void insert(std::set<LinearConstraintEq *> &constraints,LinearConstraintEq *constraint)
+{
+	auto end   = constraints.end();
+	auto begin = constraints.begin();
+	
+	/*************************************************/
+	/* Check if new constraint already exists in eqs */
+	/*************************************************/
+	for (auto c=begin;c!=end;)
+	{
+		if ((*c)->LHS == constraint->LHS)
+		{
+			c=constraints.erase(c);
+		}
+		else
+		{
+			c++;
+		}
+	}
+
+	/*************************/
+	/* Insert new constraint */
+	/*************************/
+	constraints.insert(constraint);
+}
+
+void insert(std::set<LinearConstraintNeq *> &constraints,LinearConstraintNeq *constraint)
+{
+	for (auto c:constraints)
+	{
+		if ((*c) == (*constraint))
+		{
+			return;
+		}
+	}
+	
+	/*************************/
+	/* Insert new constraint */
+	/*************************/
+	constraints.insert(constraint);
+}
+
+void AbstractStateElement_LinearConstraints::closure()
+{
+	for (auto eq:eqs)
+	{
+		for (auto neq:neqs)
+		{
+			if (eq->LHS == neq->LHS) { neqs.insert( new LinearConstraintNeq(eq->RHS,neq->RHS)); }
+		}
+	}
+}
+
+std::string AbstractStateElement_LinearConstraints::lookup(std::string var)
+{
+	for (auto eq:eqs)
+	{
+		if (var == eq->LHS)
+		{
+			for (auto it:external_vars)
+			{
+				if (it->getName().str() == eq->RHS)
+				{
+					return eq->RHS;
+				}
+			}
+		}
+	}
+	return var;
 }
 
 

@@ -37,11 +37,15 @@ public:
 			std::string(","              )+
 			std::string(" label = "      )+
 			std::string("\""             )+
-			sigma.    toString(          )+
+			sigma_in. toString(          )+
+			std::string("\\n\\\n"        )+
+			sigma_out.toString(          )+
 			std::string("|"              )+
 			std::string("write"          )+
 			std::string("|"              )+
-			sigma_tag.toString(          )+
+			sigma_in_tag. toString(      )+
+			std::string("\\n\\\n"        )+
+			sigma_out_tag.toString(      )+
 			std::string("\""             )+
 			std::string("]\n"            );		
 	}

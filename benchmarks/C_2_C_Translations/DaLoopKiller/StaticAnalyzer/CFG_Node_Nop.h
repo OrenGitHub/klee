@@ -1,10 +1,15 @@
-#ifndef __CFG_NODE_READ_H__
-#define __CFG_NODE_READ_H__
+#ifndef __CFG_NODE_NOP_H__
+#define __CFG_NODE_NOP_H__
+
+/*************************************/
+/* INCLUDE FILES :: standard library */
+/*************************************/
+#include <stdlib.h>
+#include <memory.h>
 
 /****************************/
 /* INCLUDE FILES :: PROJECT */
 /****************************/
-#include "CFG.h"
 #include "CFG_Node.h"
 
 /*******************/
@@ -17,19 +22,23 @@ using namespace std;
 /*******************/
 using namespace llvm;
 
-class CFG_Node_Read : public CFG_Node {
+/****************************/
+/* CLASS :: CFG_Node_Assign */
+/****************************/
+class CFG_Node_Nop : public CFG_Node {
 public:
+	/*********************************/
+	/* Import base class constructor */
+	/*********************************/
+	using CFG_Node::CFG_Node;
 
-	CFG_Node_Read(
-		int in_serial,
-		Instruction *in_i,
-		const std::string &in_dst,
-		const std::string &in_src)
+	/***************/
+	/* Constructor */
+	/***************/
+	CFG_Node_Nop(int in_serial,Instruction *in_i)
 	{
 		i      = in_i;
 		serial = in_serial;
-		dst    = in_dst;
-		src    = in_src;
 	}
 
 	/****************************/
@@ -44,14 +53,10 @@ public:
 			std::string(" label = "      )+
 			std::string("\"{"            )+
 			sigma_in. toString(          )+
-			std::string("|\\n\\\n|"      )+
+			std::string("|\\n\\n|"       )+
 			sigma_out.toString(          )+
 			std::string("}|"             )+
-			dst                           +
-			std::string(" = ")            +
-			std::string("[ " )            +
-			src                           +
-			std::string(" ]" )            +
+			std::string("nop"            )+
 			std::string("|{"             )+
 			sigma_in_tag. toString(      )+
 			std::string("|\\n\\\n|"      )+
@@ -59,25 +64,15 @@ public:
 			std::string("}\""            )+
 			std::string("]\n"            );
 	}
-	
+	virtual const char *getKind(){ return "CFG_Node_Nop"; }
+
 	virtual void Transform()
 	{
+		/*****************************************/
+		/* copy the entire state sigma to sigma' */
+		/*****************************************/
 		sigma_out_tag = sigma_in;
-		
-		std::string s = sigma_in.constraints.lookup(src);
-		insert(
-			sigma_out_tag.constraints.eqs,
-			new LinearConstraintEq(
-				dst,
-				std::string("[")+s+std::string("]")));
 	}
-
-	virtual const char *getKind(){ return "CFG_Node_Read"; }
-	
-private:
-	
-	std::string dst;
-	std::string src;
 };
 
 #endif

@@ -100,21 +100,22 @@ public:
 			std::string("shape = Mrecord")+
 			std::string(","              )+
 			std::string(" label = "      )+
-			std::string("\""             )+
-			sigma.    toString(          )+
-			std::string("|"              )+
+			std::string("\"{"            )+
+			sigma_in. toString(          )+
+			std::string("|\\n\\\n|"      )+
+			sigma_out.toString(          )+
+			std::string("}|"             )+
 			msg                           +
-			std::string("|"              )+
-			sigma_tag.toString(          )+
-			std::string("\""             )+
+			std::string("|{"             )+
+			sigma_in_tag. toString(      )+
+			std::string("|\\n\\\n|"      )+
+			sigma_out_tag.toString(      )+
+			std::string("}\""            )+
 			std::string("]\n"            );
 	}
 	virtual const char *getKind(){ return "CFG_Node_Branch"; }
 
-	virtual void Transform()
-	{
-		sigma_tag = sigma;
-	}
+	virtual void Transform(){ sigma_out_tag = sigma_in; }
 	
 	virtual void Update()
 	{
@@ -125,24 +126,18 @@ public:
 		{
 			for (auto succ:succs)
 			{
-				succ->sigma_tag.join(sigma_tag);
+				succ->sigma_in_tag.join(sigma_out_tag);
 				return;
 			}
 		}
-		AbstractState sigma_tag_temp;
+
 		/******************************************/
 		/* Update successrs according to conditon */
 		/******************************************/
 		for (auto succ:succs)
 		{
 			bool condition_holds;
-			sigma_tag_temp.clear();
-			sigma_tag_temp = sigma_tag;
-
-			errs() << "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n";
-			errs() << sigma_tag.toString() << "\n";
-			errs() << "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n";
-			errs() << "################################\n";
+			auto sigma_tag_temp = sigma_out_tag;
 
 			if (succ->i->getParent()->getName().str() == first_label)
 			{
@@ -160,23 +155,29 @@ public:
 			if (condition_holds)
 			{
 				if (op == "==") { insert(sigma_tag_temp.constraints.eqs, new LinearConstraintEq( LHS,RHS)); }
-				if (op == "!=") { insert(sigma_tag_temp.constraints.neqs,new LinearConstraintNeq(LHS,RHS)); }
-				if (op == "<=") { insert(sigma_tag_temp.constraints.leqs,new LinearConstraintLeq(LHS,RHS)); }
-				if (op == "<" ) { insert(sigma_tag_temp.constraints.lts, new LinearConstraintLt( LHS,RHS)); }
-				if (op == ">=") { insert(sigma_tag_temp.constraints.leqs,new LinearConstraintLeq(RHS,LHS)); }
-				if (op == ">" ) { insert(sigma_tag_temp.constraints.lts, new LinearConstraintLt( RHS,LHS)); }
+				if (op == "!=")
+				{
+					insert(sigma_tag_temp.constraints.neqs,new LinearConstraintNeq(LHS,RHS));
+					sigma_tag_temp.constraints.closure();
+				}
+				//if (op == "<=") { insert(sigma_tag_temp.constraints.leqs,new LinearConstraintLeq(LHS,RHS)); }
+				//if (op == "<" ) { insert(sigma_tag_temp.constraints.lts, new LinearConstraintLt( LHS,RHS)); }
+				//if (op == ">=") { insert(sigma_tag_temp.constraints.leqs,new LinearConstraintLeq(RHS,LHS)); }
+				//if (op == ">" ) { insert(sigma_tag_temp.constraints.lts, new LinearConstraintLt( RHS,LHS)); }
 			}
 			else
 			{
 				if (op == "==") { insert(sigma_tag_temp.constraints.neqs,new LinearConstraintNeq(LHS,RHS)); }
 				if (op == "!=")
 				{					
-					insert(sigma_tag_temp.constraints.eqs, new LinearConstraintEq( LHS,RHS));
+					// insert(sigma_tag_temp.constraints.eqs, new LinearConstraintEq( LHS,RHS));
+					assume(&(sigma_tag_temp.constraints),new LinearConstraintEq(LHS,RHS));
+					sigma_tag_temp.constraints.closure();
 				}
-				if (op == "<=") { insert(sigma_tag_temp.constraints.lts, new LinearConstraintLt( RHS,LHS)); }
-				if (op == "<" ) { insert(sigma_tag_temp.constraints.leqs,new LinearConstraintLeq(RHS,LHS)); }
-				if (op == ">=") { insert(sigma_tag_temp.constraints.lts, new LinearConstraintLt( LHS,RHS)); }
-				if (op == ">" ) { insert(sigma_tag_temp.constraints.leqs,new LinearConstraintLeq(LHS,RHS)); }
+				//if (op == "<=") { insert(sigma_tag_temp.constraints.lts, new LinearConstraintLt( RHS,LHS)); }
+				//if (op == "<" ) { insert(sigma_tag_temp.constraints.leqs,new LinearConstraintLeq(RHS,LHS)); }
+				//if (op == ">=") { insert(sigma_tag_temp.constraints.lts, new LinearConstraintLt( LHS,RHS)); }
+				//if (op == ">" ) { insert(sigma_tag_temp.constraints.leqs,new LinearConstraintLeq(LHS,RHS)); }
 			}
 
 			/********************************************************/
@@ -190,7 +191,7 @@ public:
 			//errs() << "OP( "   << op  << " )" << "\n";
 			//errs() << "RHS = " << RHS <<         "\n";
 
-			succ->sigma_tag.join(sigma_tag_temp);
+			succ->sigma_in_tag.join(sigma_tag_temp);
 		}
 	}
 	

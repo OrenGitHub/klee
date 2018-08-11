@@ -34,7 +34,8 @@ const std::string AbstractState::toString()
 {
 	return
 		constraints.toString()+
-		readinfo.toString();
+		readinfo.toString()+
+		contains.toString();
 }
 
 /********************************/
@@ -45,6 +46,7 @@ bool AbstractState::operator==(const AbstractState &that)
 	return
 		(constraints == that.constraints) &&
 		(readinfo    == that.readinfo);
+		(contains    == that.contains);
 }
 
 bool AbstractState::operator!=(const AbstractState &that)
@@ -59,5 +61,6 @@ void AbstractState::join(const AbstractState &that)
 {
 	constraints.join(that.constraints);
 	readinfo   .join(that.readinfo);
+	contains   .join(that.contains);
 }
 

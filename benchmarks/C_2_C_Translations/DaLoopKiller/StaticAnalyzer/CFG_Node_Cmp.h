@@ -51,17 +51,17 @@ public:
 			std::string("shape = Mrecord")+
 			std::string(","              )+
 			std::string(" label = "      )+
-			std::string("\""             )+
-			sigma.    toString(          )+
-			std::string("|"              )+
-			//dst                         +
-			//std::string(" = ")          +
-			//operand0                    +
-			//op                          +
-			//operand1                    +
-			std::string("|"              )+
-			sigma_tag.toString(          )+
-			std::string("\""             )+
+			std::string("\"{"            )+
+			sigma_in. toString(          )+
+			std::string("|\\n\\\n|"      )+
+			sigma_out.toString(          )+
+			std::string("}|"             )+
+			std::string("nop"            )+
+			std::string("|{"             )+
+			sigma_in_tag.toString(       )+
+			std::string("|\\n\\\n|"      )+
+			sigma_out_tag.toString(      )+
+			std::string("}\""            )+
 			std::string("]\n"            );
 	}
 	virtual const char *getKind(){ return "CFG_Node_Branch"; }
@@ -71,7 +71,7 @@ public:
 		/*****************************************/
 		/* copy the entire state sigma to sigma' */
 		/*****************************************/
-		sigma_tag = sigma;
+		sigma_out_tag = sigma_in;
 	}
 
 private:

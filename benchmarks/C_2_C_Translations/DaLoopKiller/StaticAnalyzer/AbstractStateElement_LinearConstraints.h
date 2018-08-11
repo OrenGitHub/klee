@@ -106,6 +106,8 @@ public:
 	virtual const std::string toString();
 	void join(const AbstractStateElement_LinearConstraints &that);
 	bool operator==(const AbstractStateElement_LinearConstraints &that);
+	void closure();
+	std::string lookup(std::string var);
 	virtual void clear()
 	{
 		eqs. clear();
@@ -121,18 +123,9 @@ public:
 	std::set<LinearConstraintNeq * > neqs;
 };
 
-template<class T>
-void insert(std::set<T *> &constraits,T *constraint)
-{
-	/*************************************************/
-	/* Check if new constraint already exists in eqs */
-	/*************************************************/
-	for (auto c:constraits) { if ((*c) == (*constraint)) { return; } }
+void insert(std::set<LinearConstraintEq  *> &constraints,LinearConstraintEq  *constraint);
+void insert(std::set<LinearConstraintNeq *> &constraints,LinearConstraintNeq *constraint);
 
-	/*************************/
-	/* Insert new constraint */
-	/*************************/
-	constraits.insert(constraint);
-}
+void assume(AbstractStateElement_LinearConstraints *constraints,LinearConstraintEq *constraint);
 
 #endif
