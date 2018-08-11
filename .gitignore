@@ -7,6 +7,13 @@
 #####################
 **/*.tar.*
 
+################################
+#                              #
+# BENCHMARKS build directories #
+#                              #
+################################
+benchmarks/BENCHMARK_**/build/
+
 ###########
 #         #
 # libtiff #
@@ -83,6 +90,15 @@ benchmarks/libosip_bitcode/myGdbScripts/gdbCommands.txt
 benchmarks/libosip_bitcode_vanilla/Z3LogAPI.txt
 benchmarks/libosip_bitcode_vanilla/Z3queries.txt
 benchmarks/libosip_bitcode_vanilla/makefile
+
+###########
+#         #
+# Z3 logs #
+#         #
+###########
+**/.z3-trace
+**/Z3LogAPI.txt
+**/Z3queries.txt
 
 # commonly used as cmake build directory
 /build

@@ -28,7 +28,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
 // OF THE POSSIBILITY OF SUCH DAMAGE.
 //
-
+#include <assert.h>
 #ifdef WIN32
     #include <winsock.h>
     #include <io.h>
@@ -1246,18 +1246,18 @@ int create_session(char *host,
 //
 
 void usage(void) {
-    fprintf(stderr,
-	"DNSTRACER version 1.5 - (c) Edwin Groothuis - http://www.mavetju.org\n"
-	"Usage: dnstracer [options] [host]\n"
-	"\t-c: disable local caching, default enabled\n"
-	"\t-o: enable overview of received answers, default disabled\n"
-	"\t-q <querytype>: query-type to use for the DNS requests, default A\n"
-	"\t-r <retries>: amount of retries for DNS requests, default 3\n"
-	"\t-s <server>: use this server for the initial request, default localhost\n"
-	"\t             If . is specified, A.ROOT-SERVERS.NET will be used.\n"
-	"\t-t <timeout>: timeout for DNS requests, default 15 seconds\n"
-	"\t-v: verbose\n"
-    );
+//    fprintf(stderr,
+//	"DNSTRACER version 1.5 - (c) Edwin Groothuis - http://www.mavetju.org\n"
+//	"Usage: dnstracer [options] [host]\n"
+//	"\t-c: disable local caching, default enabled\n"
+//	"\t-o: enable overview of received answers, default disabled\n"
+//	"\t-q <querytype>: query-type to use for the DNS requests, default A\n"
+//	"\t-r <retries>: amount of retries for DNS requests, default 3\n"
+//	"\t-s <server>: use this server for the initial request, default localhost\n"
+//	"\t             If . is specified, A.ROOT-SERVERS.NET will be used.\n"
+//	"\t-t <timeout>: timeout for DNS requests, default 15 seconds\n"
+//	"\t-v: verbose\n"
+//   );
     exit(1);
 }
 
@@ -1273,6 +1273,8 @@ int wsockinit(void) {
 }
 #endif
 
+void klee_make_symbolic(void *ptr,int size,char *name){}
+void markString(char *name){}
 
 int main(int argc,char **argv) {
     int		ch;
@@ -1301,9 +1303,30 @@ int main(int argc,char **argv) {
     wsockinit();
 #endif
 
-	argv[1][31]=0;
-	argv[2][31]=0;
-	argv[3][31]=0;
+	char *tmp_argv[4];
+	char **my_argv;
+	
+	tmp_argv[0] = malloc(32);
+	tmp_argv[1] = malloc(32);
+	tmp_argv[2] = malloc(32);
+	tmp_argv[3] = malloc(32);
+
+	tmp_argv[0][31]=0;
+	tmp_argv[1][31]=0;
+	tmp_argv[2][31]=0;
+	tmp_argv[3][31]=0;
+
+	klee_make_symbolic(tmp_argv[0],32,"tmp_argv0");
+	klee_make_symbolic(tmp_argv[1],32,"tmp_argv1");
+	klee_make_symbolic(tmp_argv[2],32,"tmp_argv2");
+	klee_make_symbolic(tmp_argv[3],32,"tmp_argv3");
+
+	markString(tmp_argv[0]);
+	markString(tmp_argv[1]);
+	markString(tmp_argv[2]);
+	markString(tmp_argv[3]);
+
+	my_argv = tmp_argv;
 
     while ((ch=getopt(argc,argv,"coq:r:s:t:v"))!=-1) {
 	switch (ch) {
@@ -1377,11 +1400,12 @@ int main(int argc,char **argv) {
     if (argv[0]==NULL) usage();
 
     // check for a trailing dot
+    assert(0);
     strcpy(argv0,argv[0]);
-    if (argv0[strlen(argv[0])-1]=='.') argv0[strlen(argv[0])-1]=0;
+    if (argv0[strlen(argv[0])]=='.') argv0[strlen(argv[0])]=0;
 
-    printf("Tracing to %s via %s, timeout %d seconds\n",
-	argv0,server_name,global_timeout);
+    // printf("Tracing to %s via %s, timeout %d seconds\n",
+	//argv0,server_name,global_timeout);
 
     srandom(time(NULL));
 
