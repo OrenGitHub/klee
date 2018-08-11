@@ -42,6 +42,7 @@ benchmarks/openjpeg*/build/*
 # dnstracer #
 #           #
 #############
+benchmarks/BENCHMARK_02_END_TO_END__dnstracer/dnstracer-1.6/*
 benchmarks/dnstracer*/dnstracer-1.6/*
 benchmarks/dnstracer*/build/*
 
