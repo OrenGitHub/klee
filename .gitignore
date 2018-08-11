@@ -116,3 +116,4 @@ autom4te.cache/
 #                                 #
 ###################################
 benchmarks/C_2_C_Translations/DaLoopKiller/LOOPS_SUMMARIES/LOOP_OUTPUT_*
+benchmarks/C_2_C_Translations/DaLoopKiller/ANALYSIS_STEPS/*

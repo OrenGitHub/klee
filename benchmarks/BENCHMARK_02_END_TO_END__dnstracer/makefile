@@ -1,7 +1,7 @@
 ###############
 # DIRECTORIES #
 ###############
-KLEE_ROOT_DIR  = /home/oren/GIT/klee/vanilla.klee
+KLEE_ROOT_DIR  = /home/oren/GIT/klee/str.klee
 KLEE_SRC_DIR   = ${KLEE_ROOT_DIR}/klee
 KLEE_BUILD_DIR = ${KLEE_ROOT_DIR}/build
 
@@ -31,7 +31,7 @@ compile_and_run:
 	@echo "********************************************"
 	@setterm -term linux -fore white
 	cp mySourceFiles/dnstracer.c dnstracer-1.6
-	#cp mySourceFiles/getopt.c    dnstracer-1.6
+	cp mySourceFiles/getopt.c    dnstracer-1.6
 	@setterm -term linux -fore blue
 	@echo "*********************"
 	@echo "*                   *"
@@ -84,8 +84,9 @@ compile_and_run:
 	${KLEE}                                         \
 	--libc=uclibc                                   \
 	--posix-runtime                                 \
+	-constants-as-ABs                               \
 	-solver-backend=z3                              \
-	-output-module                                  \
+	-no-output                                      \
 	-output-source                                  \
 	-use-independent-solver=0                       \
 	-use-cex-cache=0                                \
@@ -93,7 +94,7 @@ compile_and_run:
 	-debug-z3-dump-queries=Z3queries.txt            \
 	-debug-z3-log-api-interaction=Z3LogAPI.txt      \
 	${PROGRAM_PATH}/${PROGRAM_NAME}_with_names.bc   \
-	-sym-args 4 4 32
+	--sym-args 4 4 32
 	@setterm -term linux -fore blue
 	@echo "******************************************"
 	@echo "*                                        *"
@@ -102,6 +103,9 @@ compile_and_run:
 	@echo "******************************************"
 	@setterm -term linux -fore white
 	llvm-dis klee-last/final.bc
+#################################
+# BUILD EVERYTHING FMOR SCRATCH #
+#################################
 .PHONY: build_everything_from_scratch
 build_everything_from_scratch:
 	@clear
