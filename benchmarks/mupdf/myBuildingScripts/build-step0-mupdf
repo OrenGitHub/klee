@@ -2,9 +2,9 @@
 #########
 # FILES #
 #########
-PACKAGE_NAME=mupdf-1.12.0-source
-PACKAGE_TAR_FILE=${PACKAGE_NAME}.tar.xz
-PACKAGE_FTP_SITE=https://mupdf.com/downloads/
+PACKAGE_NAME=mupdf-1.10a-source
+PACKAGE_TAR_FILE=${PACKAGE_NAME}.tar.gz
+PACKAGE_FTP_SITE=https://mupdf.com/downloads/archive
 
 ####################################
 # REMOVE OLD STUFF JUST TO BE SURE #
