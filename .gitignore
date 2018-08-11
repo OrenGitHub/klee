@@ -19,6 +19,7 @@ benchmarks/BENCHMARK_**/build/
 # libtiff #
 #         #
 ###########
+benchmarks/BENCHMARK_03_END_TO_END__tiff/tiff-3.8.2/*
 benchmarks/libtiff*/tiff-3.8.2/*
 benchmarks/libtiff*/build/*
 
@@ -59,6 +60,7 @@ benchmarks/vlc*/build/*
 # libosip #
 #         #
 ###########
+benchmarks/libosip_bitcode_vanilla/makefile
 benchmarks/libosip*/libosip2-4.1.0/*
 benchmarks/libosip*/build/*
 
@@ -67,6 +69,7 @@ benchmarks/libosip*/build/*
 # gzip #
 #      #
 ########
+benchmarks/BENCHMARK_04_END_TO_END__gzip/gzip-1.2.4a/*
 benchmarks/gzip*/gzip-1.2.4a/*
 benchmarks/gzip*/build/*
 benchmarks/gzip*/myInput/B/*
