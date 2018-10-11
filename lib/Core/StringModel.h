@@ -51,12 +51,14 @@ public:
 		ref<Expr> n);
 
     StrModel modelStrchr(const ObjectState* moS, ref<Expr> s, ref<Expr> c);
+    StrModel modelStrcspn(const ObjectState* moS, ref<Expr> s, std::string s2);
+    StrModel modelStrspn(const ObjectState* moS, ref<Expr> s, std::string s2);
 
-    StrModel modelStrcspn(
-    	const ObjectState* osHaystack,
-    	ref<Expr> haystack,
-    	const ObjectState* osNeedle,
-		ref<Expr> needle);
+//    StrModel modelStrcspn(
+//    	const ObjectState* osHaystack,
+//    	ref<Expr> haystack,
+//    	const ObjectState* osNeedle,
+//		ref<Expr> needle);
 
     StrModel modelStrstr(
     	const ObjectState* osHaystack,

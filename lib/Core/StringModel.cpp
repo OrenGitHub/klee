@@ -217,74 +217,6 @@ StrModel StringModel::modelStrcmp(
    );
 }
 
-StrModel StringModel::modelStrcspn(
-	const ObjectState* osHaystack,
-	ref<Expr> haystack,
-	const ObjectState* osNeedle,
-	ref<Expr> needle)
-{
-	const MemoryObject* moHaystack = osHaystack->getObject();
-	const MemoryObject* moNeedle   = osNeedle->getObject();
-
-	/********************/
-	/* [5] haystack_var */
-	/********************/
-	ref<Expr> haystack_size   = moHaystack->getIntSizeExpr();
-	ref<Expr> haystack_offset = moHaystack->getOffsetExpr(haystack);	
-	ref<Expr> haystack_var    = StrSubstrExpr::create(
-		StrVarExpr::create(osHaystack->getABSerial()),
-		BvToIntExpr::create(haystack_offset),
-		SubExpr::create(haystack_size,haystack_offset));
-
-	/******************/
-	/* [6] needle_var */
-	/******************/
-	ref<Expr> needle_size   = moNeedle->getIntSizeExpr();
-	ref<Expr> needle_offset = moNeedle->getOffsetExpr(needle);	
-	ref<Expr> needle_helper_var = StrSubstrExpr::create(
-		StrVarExpr::create(osNeedle->getABSerial()),
-		BvToIntExpr::create(needle_offset),
-		SubExpr::create(needle_size,needle_offset));
-	ref<Expr> needle_var = StrSubstrExpr::create(
-		needle_helper_var,
-		zero,
-		StrFirstIdxOfExpr::create(
-			needle_helper_var,
-			x00));
-
-	/*******************************/
-	/* [7] Check if c appears in p */
-	/*******************************/
-	static int tmpStrVarSerialIdx=0;
-	ref<Expr> c = StrVarExpr::create(std::string("c")+std::to_string(tmpStrVarSerialIdx++));
-	ref<Expr> needleAppears = EqExpr::create(
-		StrFirstIdxOfExpr::create(haystack_var,c),
-		minusOne);
-	// AndExpr::create(
-		//StrContainsExpr::create(haystack_var,c);//,
-		//StrContainsExpr::create(needle_var  ,c));
-		
-	ref<Expr> firstIndexOfx00 = StrFirstIdxOfExpr::create(haystack_var,x00);
-	
-	/*****************************************************************************/
-	/* [9] Issue an error when invoking strcspn on a non NULL terminated string, */
-	/*     and all the needle chars can be missing ...                           */
-	/*****************************************************************************/
-	ref<Expr> validAccess = //OrExpr::create(
-			needleAppears;//,
-//			StrContainsExpr::create(haystack_var,x00));
-
-	ref<Expr> strcspnReturnValue = 
-		SelectExpr::create(
-			EqExpr::create(
-				StrLengthExpr::create(needle_var),
-				one),
-			StrFirstIdxOfExpr::create(haystack_var,needle_var),
-			one);
-
-	return std::make_pair(strcspnReturnValue,validAccess);
-}
-
 StrModel StringModel::modelStrstr(
 	const ObjectState* osHaystack,
 	ref<Expr> haystack,
@@ -425,6 +357,102 @@ StrModel StringModel::modelStrpbrk(const ObjectState* os, ref<Expr> s,
           zero);
 
  return std::make_pair(strchrReturnValue, validAcess);
+}
+
+StrModel StringModel::modelStrcspn(const ObjectState* os, ref<Expr> s, std::string s2) {
+  const MemoryObject* mos = os->getObject();
+	/*******************************/
+	/* [5] Check if c appears in p */
+	/*******************************/
+	ref<Expr> size   = mos->getIntSizeExpr();
+	ref<Expr> offset = mos->getOffsetExpr(s);	
+	ref<Expr> p_var  = StrSubstrExpr::create(
+		StrVarExpr::create(os->getABSerial()),
+		BvToIntExpr::create(offset),
+		SubExpr::create(size,offset));
+
+	static int tmpStrVarSerialIdx=0;
+	ref<Expr> prefix = StrVarExpr::create(std::string("cspnpre")+std::to_string(tmpStrVarSerialIdx++));
+	ref<Expr> suffix = StrVarExpr::create(std::string("cspnsuf")+std::to_string(tmpStrVarSerialIdx++));
+
+  ref<Expr> prefSuffixEqual= StrEqExpr::create(p_var, StrConcatExpr::create(prefix,suffix));
+	auto zeroBV    = ConstantExpr::create(0,Expr::Int64);
+
+  ref<Expr> notContainsInPrefix = EqExpr::create(zeroBV, zeroBV); //= true
+  ref<Expr> firstChrInSuffix = EqExpr::create(zeroBV, zeroBV); //= true
+  
+
+  for(char& c : s2) {
+    llvm::errs() << "cSpn looking at " << c << "\n";
+    ref<Expr> chr = StrFromBitVector8Expr::create(ConstantExpr::create(c, Expr::Int8));
+
+    notContainsInPrefix = AndExpr::create(
+          notContainsInPrefix,
+          NotExpr::create(StrContainsExpr::create(prefix, chr))
+    );
+
+    firstChrInSuffix = AndExpr::create(
+          firstChrInSuffix,
+          NotExpr::create(StrEqExpr::create(StrCharAtExpr::create(suffix, zero), chr))
+    );
+  }
+
+
+
+  ref<Expr> conditions = AndExpr::create(NotExpr::create(StrContainsExpr::create(prefix, x00)),
+                AndExpr::create(prefSuffixEqual,
+                      AndExpr::create(notContainsInPrefix, firstChrInSuffix)));
+//  conditions->dump();
+
+ return std::make_pair(StrLengthExpr::create(prefix),conditions);
+
+}
+StrModel StringModel::modelStrspn(const ObjectState* os, ref<Expr> s, std::string s2) {
+  const MemoryObject* mos = os->getObject();
+	ref<Expr> size   = mos->getIntSizeExpr();
+	ref<Expr> offset = mos->getOffsetExpr(s);	
+	ref<Expr> p_var  = StrSubstrExpr::create(
+		StrVarExpr::create(os->getABSerial()),
+		BvToIntExpr::create(offset),
+		SubExpr::create(size,offset));
+ 
+	static int tmpStrVarSerialIdx=0;
+	ref<Expr> prefix = StrVarExpr::create(std::string("pref")+std::to_string(tmpStrVarSerialIdx++));
+	ref<Expr> suffix = StrVarExpr::create(std::string("suffix")+std::to_string(tmpStrVarSerialIdx++));
+
+  ref<Expr> prefSuffixEqual= StrEqExpr::create(p_var, StrConcatExpr::create(prefix,suffix));
+//  prefSuffixEqual->dump();
+	auto zeroBV    = ConstantExpr::create(0,Expr::Int64);
+
+  ref<Expr> containsInPrefix; //= true
+  ref<Expr> firstChrInSuffix = EqExpr::create(zeroBV, zeroBV); //= true
+  
+
+  for(char& c : s2) {
+    llvm::errs() << "Spn looking at " << c << "\n";
+    ref<Expr> chr = StrFromBitVector8Expr::create(ConstantExpr::create(c, Expr::Int8));
+    if(containsInPrefix.isNull()) {
+        containsInPrefix = RegexFromStrExpr::create(chr);
+    } else {
+        containsInPrefix = RegexUnionExpr::create(containsInPrefix, 
+                                        RegexFromStrExpr::create(chr));
+    }
+
+    firstChrInSuffix = AndExpr::create(
+          firstChrInSuffix,
+          NotExpr::create(StrEqExpr::create(StrCharAtExpr::create(suffix, zero), chr))
+    );
+  }
+
+  containsInPrefix = StrInRegexExpr::create(prefix, RegexKleeneStarExpr::create(containsInPrefix));
+
+
+  ref<Expr> conditions = AndExpr::create(NotExpr::create(StrContainsExpr::create(prefix, x00)),
+                AndExpr::create(prefSuffixEqual,
+                      AndExpr::create(containsInPrefix, firstChrInSuffix)));
+//  conditions->dump();
+
+ return std::make_pair(StrLengthExpr::create(prefix),conditions);
 }
 StrModel StringModel::modelStrchr(const ObjectState* os, ref<Expr> s, ref<Expr> c) {
   const MemoryObject* mos = os->getObject();
@@ -570,6 +598,7 @@ StrModel StringModel::modelStrncpy(ObjectState* osDst, ref<Expr> dst,
 	/***************************/
 	/* [9] New Dst Version ... */
 	/***************************/
+  assert(osDst->serial >= 0 && "Strcpy to non cstring!");
 	osDst->version++;
 	ref<Expr> AB_dst_new_var = StrVarExpr::create(osDst->getABSerial());
 
@@ -651,6 +680,7 @@ StrModel StringModel::modelStrcpy(ObjectState* osDst, ref<Expr> dst,
 	/***************************/
 	/* [9] New Dst Version ... */
 	/***************************/
+  assert(osDst->serial >= 0 && "Strcpy to non cstring!");
 	osDst->version++;
 	ref<Expr> AB_dst_new_var = StrVarExpr::create(osDst->getABSerial());
 

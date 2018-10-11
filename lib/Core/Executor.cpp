@@ -665,13 +665,16 @@ static int numAbs = 10000;
 //         && i->hasPrivateLinkage()
          && i->getType()->getElementType()->isArrayTy()
          && dyn_cast<ArrayType>(i->getType()->getElementType())->getElementType()->isIntegerTy(8)) {
-         std::vector<unsigned char> c(wos->size);
-         for(unsigned i = 0; i < wos->size; i++) {
-             c[i] = dyn_cast<ConstantExpr>(wos->read8(i))->getZExtValue(8);
-         }
-         mo->setName(i->getName());
          wos->serial = numAbs++;
          wos->version = 0;
+         std::vector<unsigned char> c(wos->size);
+ //        errs() << os->getABSerial()  << " os size: " << wos->size << "\n";
+         for(unsigned i = 0; i < wos->size; i++) {
+             c[i] = dyn_cast<ConstantExpr>(wos->read8(i))->getZExtValue(8);
+//             errs() << (int)c[i] << "-";
+         }
+  //       errs() << "\n";
+         mo->setName(i->getName());
      //    std::stringstream ss;
      //    ss << c << "\\x00";
      //    errs() << os->getABSerial() << " " << mo->name << " "  << ss.str() << " os size: " << wos->size << "\n";
@@ -3381,6 +3384,7 @@ void Executor::executeMemoryOperation(ExecutionState &state,
 		sprintf(name,"tempBitVec8_serial_%d",index++);
         ref<Expr> offset = mo->getOffsetExpr(address);		
         errs() << "Reading mo serial " << os->serial << " version " << os->version << " " << os->getABSerial() << "\n";
+        state.dumpStack(errs());
         //state.dumpStack(errs());
         //assert(dyn_cast<ConstantExpr>(offset) && "Todo non constant offests");
         offset = BvToIntExpr::create(offset);		

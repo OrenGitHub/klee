@@ -93,16 +93,18 @@ static SpecialFunctionHandler::HandlerInfo handlerInfo[] = {
   add("MyPrintOutput",               handleMyPrintOutput,               false),
   add("MyAtoi",                      handleMyAtoi,                      true),
   add("markString",                  handleMarkString,                    false),
-  add("strcpy",                      handleStrcpy,                    false),
-  add("strncpy",                     handleStrncpy,                   false),
+  add("strcpy",                      handleStrcpy,                    true),
+  add("strncpy",                     handleStrncpy,                   true),
   add("strchr",                      handleStrchr,                    true),
   add("strpbrk",                     handleStrpbrk,                    true),
   add("strstr",                      handleStrstr,                    true),
-  add("strrchr",                     handleStrrchr,                   true),
+  add("strspn",                      handleStrspn,                    true),
+  add("strcspn",                      handleStrcspn,                    true),
+  add("xstrrchr",                     handleStrrchr,                   true),
   add("strcmp",                      handleStrcmp,                    true),
   add("strncmp",                     handleStrncmp,                   true),
   add("strncasecmp",                 handleStrncasecmp,               true),
-  add("myStrcspn",                   handleStrcspn,                   true),
+  add("strncmp",                   handleStrncmp,                   true),
   add("strlen",                      handleStrlen,                    true),
   add("strnlen",                     handleStrnlen,                   true),
   add("strdup",                     handleStrdup,                   true),
@@ -776,6 +778,7 @@ void SpecialFunctionHandler::handleStrcpy(
   assert(arguments.size() == 2 && "Strcpy takes 2 arguments!");
   ObjectPair op = executor.resolveOne(state, arguments[0]);
   ObjectState *wos = state.addressSpace.getWriteable(op.first, op.second);
+  errs() << "Resolved first arg!\n";
   StrModel m = stringModel.modelStrcpy(
                       wos,
                       arguments[0],
@@ -791,6 +794,7 @@ void SpecialFunctionHandler::handleStrcpy(
   }
 
   src_is_NULL_terminated->addConstraint(m.first);
+  executor.bindLocal(target,*src_is_NULL_terminated, arguments[0]);
 }
 
 void SpecialFunctionHandler::handleStrncasecmp(
@@ -911,6 +915,13 @@ void SpecialFunctionHandler::handleStrncpy(
   assert(arguments.size() == 3 && "Strncpy takes 3 arguments!");
   ObjectPair op = executor.resolveOne(state, arguments[0]);
   ObjectState *wos = state.addressSpace.getWriteable(op.first, op.second);
+  if(wos->serial < 0) {
+    wos->serial = ++numABSerials;
+    wos->version = 0;
+	  state.addConstraint(EqExpr::create(
+  		(StrLengthExpr::create(StrVarExpr::create(wos->getABSerial()))),
+      op.first->getIntSizeExpr()));
+  }
   StrModel m = stringModel.modelStrncpy(
                       wos,
                       arguments[0],
@@ -927,6 +938,7 @@ void SpecialFunctionHandler::handleStrncpy(
   }
 
   not_access_after_end->addConstraint(m.first);
+  executor.bindLocal(target,*not_access_after_end, arguments[0]);
 }
 
 void SpecialFunctionHandler::handleStrcmp(
@@ -1056,6 +1068,7 @@ void SpecialFunctionHandler::handleStrrchr(
 	KInstruction *target,
 	std::vector<ref<Expr> > &arguments)
 {
+  state.dumpStack(errs());
 	ref<Expr> x00 = StrConstExpr::create("\\x00");
 	ref<Expr> one = BvToIntExpr::create(ConstantExpr::create(1,Expr::Int64));
 	ref<Expr> zero= BvToIntExpr::create(ConstantExpr::create(0,Expr::Int64));
@@ -1285,30 +1298,31 @@ void SpecialFunctionHandler::handleStrstr(
 	executor.bindLocal(target,*valid_access, m.first);
 }
 
-void SpecialFunctionHandler::handleStrcspn
-(
+void SpecialFunctionHandler::handleStrcspn(
 	ExecutionState &state,
 	KInstruction *target,
 	std::vector<ref<Expr> > &arguments)
 {
-	StrModel m = stringModel.modelStrcspn(
-		executor.resolveOne(state,arguments[0]).second,
-		arguments[0],
-		executor.resolveOne(state,arguments[1]).second,
-		arguments[1]);
+  StrModel m = stringModel.modelStrcspn(
+                      executor.resolveOne(state,arguments[0]).second, 
+                      arguments[0],
+                      readStringAtAddress(state,arguments[1]));
 
-	Executor::StatePair branches = executor.fork(state, m.second, true);
-	ExecutionState *valid_access = branches.first;
-	ExecutionState *invalid_access= branches.second;
-	if (invalid_access)
-	{
-		executor.terminateStateOnError(
-			*invalid_access, 
-			"Strcspn has out of bounds behaviour",
-			Executor::Ptr);
-	}
+  state.addConstraint(m.second);
+  executor.bindLocal(target,state, m.first);
+}
+void SpecialFunctionHandler::handleStrspn(
+	ExecutionState &state,
+	KInstruction *target,
+	std::vector<ref<Expr> > &arguments)
+{
+  StrModel m = stringModel.modelStrspn(
+                      executor.resolveOne(state,arguments[0]).second, 
+                      arguments[0],
+                      readStringAtAddress(state, arguments[1]));
 
-	executor.bindLocal(target,*valid_access, m.first);
+  state.addConstraint(m.second);
+  executor.bindLocal(target,state, m.first);
 }
 
 void SpecialFunctionHandler::handleStrchr(
